@@ -1,0 +1,105 @@
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\usepackage{bm}
+\usepackage{upgreek}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows}
+
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+%-------------------------------
+%	TITLE SECTION
+%-------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{
+\normalfont \normalsize
+\textsc{Brigham Young University} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Cool Title \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{James Jackson, Robert Pottorff} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+
+\abstract{abstract goes here}
+
+%-------------------------------------------------
+%	PROBLEM 1
+%-------------------------------------------------
+
+
+\section{Introduction}
+
+\begin{itemize}
+	\item high-speed obstacle avoidance is a difficult problem
+	\item Several attempts to solve the problem have been attempted
+	\item it remains an open problem
+	\item Deep learning is a developing field with wide applications
+	\item Could potentially be used to solve obstacle avoidance
+	\item Would require enourmous amounts of training data
+	\item We propose to use simulated training data to augment real data
+	\item Would require much less time, but network has to be general enough to use in real life
+\end{itemize}
+
+\section{Background}
+
+\begin{itemize}
+	\item OA Background
+	\begin{itemize}
+		\item There have been a number of attempts to solve the obstacle avoidance problem
+		\item FFLAO, CEPA, CMU learning, etc...
+		\item These are all based on algorithms, some have been tuned with training data
+		\item We use a neural network to find the function, rather than manually developing one.
+	\end{itemize}
+\end{itemize}
+
+\begin{itemize}
+	\item  NN Background
+	\begin{itemize}
+		\item Neural Networks can be used to process camera data
+		\item They have demonstrated a lot of effectiveness at playing video games
+		\item Brief overview of supervised learning and it's applications
+		\item They can be used to train an obstacle avoidance algorithm
+	\end{itemize}
+\end{itemize}
+
+\begin{itemize}
+	\item SL background
+	\begin{itemize}
+		\item Simulated training data is inherently different than real data
+		\item People who have attempted to merge the two
+		\item We have successfully augmented our real life training data with simulated data.
+	\end{itemize}
+\end{itemize}
+
+\section{Implementation}
+
+
+
+
+
+
+
+\end{document}
