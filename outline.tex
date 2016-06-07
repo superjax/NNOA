@@ -43,7 +43,7 @@
 \maketitle % Print the title
 
 
-\abstract{abstract goes here}
+\abstract{Can we fly 45 mph through a simulated environment using deep learning?}
 
 %-------------------------------------------------
 %	PROBLEM 1
@@ -51,54 +51,51 @@
 
 
 \section{Introduction}
-
 \begin{itemize}
-	\item high-speed obstacle avoidance is a difficult problem
-	\item Several attempts to solve the problem have been attempted
-	\item it remains an open problem
-	\item Deep learning is a developing field with wide applications
-	\item Could potentially be used to solve obstacle avoidance
-	\item Would require enourmous amounts of training data
-	\item We propose to use simulated training data to augment real data
-	\item Would require much less time, but network has to be general enough to use in real life
-\end{itemize}
-
-\section{Background}
-
-\begin{itemize}
-	\item OA Background
+	\item Obstacle Avoidance
 	\begin{itemize}
-		\item There have been a number of attempts to solve the obstacle avoidance problem
-		\item FFLAO, CEPA, CMU learning, etc...
-		\item These are all based on algorithms, some have been tuned with training data
-		\item We use a neural network to find the function, rather than manually developing one.
+		\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
+		\item FFLOA - first ROAP, uses a heavy, specialized sensor, awesome results.
+		\item Schopferer - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
+		\item Oleynikova - Stereo vision FFLOA
+		\item Saunders - Local memory Voxel Grid-based planning
+		\item Some newer avoidance methods have leveraged the work in deep learning to come up with other obstacle avoidance methods.
+		\item Ross - Supervised Learning obstacle avoidance from manually extracted features - read citations and cited by's
 	\end{itemize}
 \end{itemize}
 
 \begin{itemize}
-	\item  NN Background
+	\item Neural Networks
 	\begin{itemize}
-		\item Neural Networks can be used to process camera data
-		\item They have demonstrated a lot of effectiveness at playing video games
-		\item Brief overview of supervised learning and it's applications
-		\item They can be used to train an obstacle avoidance algorithm
+		\item Convoultion NN
+		\item Deep NN
+		\item Relevant Applications
 	\end{itemize}
 \end{itemize}
 
+\section{Approach}
+
 \begin{itemize}
-	\item SL background
+	\item Simulation Description
 	\begin{itemize}
-		\item Simulated training data is inherently different than real data
-		\item People who have attempted to merge the two
-		\item We have successfully augmented our real life training data with simulated data.
+		\item Using Gazebo
+		\item Using 2nd-order dynamic model of roll and pitch with specified time constants $\zeta=0.707$, $\omega=???$ \textbf{figure out the appropriate response frequency}
+		\item Randomly Generated Environments - define environment
+	\end{itemize}
+	\item Supervised Learning Beginning
+	\begin{itemize}
+		\item Use RRT to plan optimal trajectory
+		\item Use a 2nd-order simplified model of Multirotor dynamics in simulation
+		\item Learned to approximate the RRT plan through environment
+		\item Train NN to extract optimized features for obstacle avoidance
+		\item warm start perception and avoidance network for reinforcement learnin
+	\end{itemize}
+	\item Reinforcement Learning
+	\begin{itemize}
+		\item Cost function is deviation from path weighted with staying away form obstacles
+		\item Eventually learned to 
 	\end{itemize}
 \end{itemize}
-
-\section{Implementation}
-\begin{itemize}
-	\item 
-\end{itemize}
-
 
 
 
