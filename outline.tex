@@ -47,7 +47,7 @@
 \section{Introduction}
 
 \begin{itemize}
-	\item	Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
+	\item Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
 	\item At high speeds, however, obstacle avoidance is critical to many of the practical applications
 \end{itemize}
 	
@@ -97,6 +97,7 @@
 				\item Zhang et al.~\cite{Zhang2015} approximated MPC with a neural network using supervised learning (may not apply to our stuff)
 				\item Kim et al.~\cite{Kim2015} - Monocular camera of indoor flight using a MAV.  Supplied a dataset - expanded~\cite{Ross2013} with an ``advanced classifer'', used a ConvNet, and tried to get the MAV to find targets on its own.
 				\item Giusti et al.~\cite{Guisti2016} demonstrated the application of a DNN which could extract relevant features and follow a previously unknown trail in a forested area.
+
 			\end{itemize}
 		\end{itemize}
 
@@ -117,36 +118,73 @@
 		
 		Deep Compression~\cite{Han2015}
 
+		Progressive Networks
+
+
+	% \item Introdution to approach (overview)
+	% \begin{itemize}
+	% 	\item Deep learning has so many parameters, needs tons of data AND reinforcement learning needs failure therefore simulation is practically only option
+	% 	\item Simulation is cheap, but comes at the expense of realism
+	% 	\item Transfering from simulation to real-life is difficult
+	% 	\item therefore - two simulations and demonstrate theory by transfering to high fidelity unreal engine
+	% \end{itemize}
+
 
 \section{Approach} 
-
+\begin{itemize}
+	\item what is simulator A?
 	\begin{itemize}
-		\item To overcome the issues associated with expensive expert flythoughs, we developed two simulation environments. 
-		\item The first of our two environments is a simplified 3D world based on	the Gazebo simulation tool which provided us with simulation speed at the expense of realism. 
-		\item The second environment is based on a custom implementation of the Unreal Game Engine and was deisgned to produce photorealistic training data.
+		\item built in gazebo
+		\item obstacles are pylons and walls randomly placed
+		\item second order dynamics for pitch/roll/yaw
+		\item first order dynamics for thrust
+		\item colision calculation
+		\item world is guarnteed to be traversable and meet constraints so that turning radius at n mph is at least x, and \cite{Richter2014}-like 
 	\end{itemize}
 
+	\item what is simulator B?
 	\begin{itemize}
-		\item Rather than rely on our environments to train exclusively using reinforcement learning where the policy of the agent would always be enacted via the simulation, we opted instead to use a hybrid approach: warm-starting a randomly-initialized network using supervised learning before finalizing training using the standard reinforcement learning regime.
-		\item This hybrid approach allowed us to significantly reduce training time and experiment with various topologies and hyperparameters, focusing scarse computational resources on fine-grained policy decisions.
+		\item same as A, but higher fidelity and slower
+		\item obstacles are simulated to look like indoor cluttered environments
 	\end{itemize}
 
-	\subsection{Warm-starting with Supervised Learning} 
+	\item what does our network look like?
 	\begin{itemize}
-		\item To generate simulated training data for use during the supervised warm-starting, we created 10 million tasks each consisting of a random world, with an optimim trajectory calculated using Rapidly Exploring Random Tree (RRT) between a random start and end point. 
-		\item These tasks, via simulation, each generate anywhere from a few hundred to a few thousand training instance tuples of camera sensor data, target straight-line trajectory, and the expected avodiance trajectory. 
-		\item To account for the bias favoring perfect orientations, noise was injected into the attitude of the UAV at each step of the simulation before storing the experience pair and taking the next optimal step. 
-		\item Specific details regrading the control algorithms including hyperparameters are avaliable in the appendix.
+		\item identical structure to \cite{Lillicrap2015}
+		\item hyperparameters
+		\item topology
+		\item picture
 	\end{itemize}
 
-	\subsection{Reinforcement Learning} 
-		\begin{itemize}
-		\item After warm-starting the network with simulated expert data we fine tuned network parameters using reinforcement learning. 
-		\item A new random world was generated at the start of each episode using the same hyperparameters to those during warm-starting. 
-		\item Reward is credited every 10 meters if the agent is still upright and any closer to the target and again when the agent passed through a 5 meter radius of the target. 
-		\item Discritized reward every 10 meters was used in favor of a more continuous reward such as change in inverse distance to avoid instability problems in the deep network approximation. 
-		\item To improve simulation speed, a second-order dynamic model of roll and pich were used to approximate environment reaction for the first 5 million training iterations, after which a full model was used to fine-tune network parameters.
+	\item how do we train an agent to succeed in supervised simulator A?
+	\begin{itemize}
+		\item similar to \cite{Kim2015} except with RRT in lieu of expert pilot 
+		\item generate 10m training tuples of (sensor, goal trajectory, expected avoidance trajectory) over 10m (world, optimal trajectory)
+		\item account for orientation bias in training tuples and real-life noise in sensor data
+		\item cost function
+		\item network details
 	\end{itemize}
+
+	\item how do we train an agent to succeed in unsupervised (RL) simulator A?
+	\begin{itemize}
+		\item similar to \cite{Lillicrap2015} except with pre-trained network and UAV task instead of whatever they use
+		\item new worlds generated every episode similar to supervised worlds
+		\item cost function / q learning math
+		\item terminal state is defined as 5 meter radius to goal
+		\item discritized reward every 10 meters vs change in inverse distance
+		\item why discritized reward?
+		\item negative reward on crash / death
+	\end{itemize}
+
+	\item how do we transfer knowlege from network A to network B
+	\begin{itemize}
+		\item network A (trained for simulation) has identical structure to network B (trained for real-world)
+		\item train network A using simulation
+		\item gather data for network B
+		\item train network B with additional cost of minimizing gram matrix similarity
+	\end{itemize}
+
+\end{itemize}
 
 
 \section{Results}
