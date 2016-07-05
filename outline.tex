@@ -46,22 +46,32 @@
 
 \section{Introduction}
 
-	Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
-	At high speeds, however, obstacle avoidance is critical to many of the practical applications
+\begin{itemize}
+	\item	Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
+	\item At high speeds, however, obstacle avoidance is critical to many of the practical applications
+\end{itemize}
 	
-	At it's heart, obstacle avoidance is about forming a policy $\pi$ that relates an action to a given sensor state $s$.
-	This often means transforming an often noisy, high dimensional sensor space into a high-level abstraction that can make this mapping tractable.
+\begin{itemize}
+	\item At it's heart, obstacle avoidance is about forming a policy $\pi$ that relates an action to a given sensor state $s$.
+	\item This often means transforming an often noisy, high dimensional sensor space into a high-level abstraction that can make this mapping tractable.
+\end{itemize}
 	
-	Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
-	More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [citation needed] to improve results but maintain a standard post-feature processing pipeline.
-	Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowlege have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
-	
-	Our motivation in this work is to show that the right high-dimensional feature space can enable an agent to perform with greater accuracy and at higher speeds than previous methods.
-	We apply advancements made in reinforcement learning to actively learn high-level representations that maximize performance on obstacle avoidance tasks, enabling us to achieve state-of-the-art performance at high speeds in both simulated and real-world scenarios. 
+\begin{itemize}
+	\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
+	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [citation needed] to improve results but maintain a standard post-feature processing pipeline.
+	\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowlege have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
+\end{itemize}
 
-	Critical to reinforcement learning methods is the capcity to learn via trial and error, often a serious problem for real-world agents where failure is catostrophic.
-	To overcome this problem, we also introduce a method for combining real world and simulated data.
-	The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
+\begin{itemize}	
+	\item Our motivation in this work is to show that the right high-dimensional feature space can enable an agent to perform with greater accuracy and at higher speeds than previous methods.
+	\item We apply advancements made in reinforcement learning to actively learn high-level representations that maximize performance on obstacle avoidance tasks, enabling us to achieve state-of-the-art performance at high speeds in both simulated and real-world scenarios. 
+\end{itemize}
+
+\begin{itemize}
+	\item Critical to reinforcement learning methods is the capcity to learn via trial and error, often a serious problem for real-world agents where failure is catostrophic.
+	\item To overcome this problem, we also introduce a method for combining real world and simulated data.
+	\item The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
+\end{itemize}
 
 \section{Literature Review}
 
