@@ -1,0 +1,59 @@
+This is BibTeX, Version 0.99d (TeX Live 2013/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: outline.aux
+The style file: ieeetr.bst
+Database file #1: ./library.bib
+Repeated entry---line 301 of file ./library.bib
+ : @article{Ross2013
+ :                  ,
+I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for "CEPA"
+Warning--empty journal in Oleynikova2015
+Warning--empty journal in Zhang2015
+Warning--empty journal in Kim2015
+Warning--empty author in Guisti2016
+Warning--empty title in Guisti2016
+Warning--empty journal in Guisti2016
+Warning--empty year in Guisti2016
+You've used 18 entries,
+            1876 wiz_defined-function locations,
+            584 strings with 6868 characters,
+and the built_in function-call counts, 4946 in all, are:
+= -- 450
+> -- 253
+< -- 0
++ -- 91
+- -- 73
+* -- 382
+:= -- 728
+add.period$ -- 17
+call.type$ -- 18
+change.case$ -- 17
+chr.to.int$ -- 0
+cite$ -- 25
+duplicate$ -- 245
+empty$ -- 441
+format.name$ -- 73
+if$ -- 1161
+int.to.chr$ -- 0
+int.to.str$ -- 18
+missing$ -- 18
+newline$ -- 57
+num.names$ -- 17
+pop$ -- 66
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 151
+stack$ -- 0
+substring$ -- 320
+swap$ -- 94
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 7
+while$ -- 44
+width$ -- 20
+write$ -- 159
+(There was 1 error message)
