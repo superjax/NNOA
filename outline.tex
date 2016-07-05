@@ -110,16 +110,33 @@
 
 \section{Approach} 
 
-	To overcome the issues associated with expensive expert flythoughs, we developed two simulation environments. The first of our two environments is a simplified 3D world based on
-	the Gazebo simulation tool which provided us with simulation speed at the expense of realism. The second environment is based on a custom implementation of the Unreal Game Engine and was deisgned to produce photorealistic training data.
+	\begin{itemize}
+		\item To overcome the issues associated with expensive expert flythoughs, we developed two simulation environments. 
+		\item The first of our two environments is a simplified 3D world based on	the Gazebo simulation tool which provided us with simulation speed at the expense of realism. 
+		\item The second environment is based on a custom implementation of the Unreal Game Engine and was deisgned to produce photorealistic training data.
+	\end{itemize}
 
-	Rather than rely on our environments to train exclusively using reinforcement learning where the policy of the agent would always be enacted via the simulation, we opted instead to use a hybrid approach: warm-starting a randomly-initialized network using supervised learning before finalizing training using the standard reinforcement learning regime. This hybrid approach allowed us to significantly reduce training time and experiment with various topologies and hyperparameters, focusing scarse computational resources on fine-grained policy decisions.
+	\begin{itemize}
+		\item Rather than rely on our environments to train exclusively using reinforcement learning where the policy of the agent would always be enacted via the simulation, we opted instead to use a hybrid approach: warm-starting a randomly-initialized network using supervised learning before finalizing training using the standard reinforcement learning regime.
+		\item This hybrid approach allowed us to significantly reduce training time and experiment with various topologies and hyperparameters, focusing scarse computational resources on fine-grained policy decisions.
+	\end{itemize}
 
 	\subsection{Warm-starting with Supervised Learning} 
-	To generate simulated training data for use during the supervised warm-starting, we created 10 million tasks each consisting of a random world, with an optimim trajectory calculated using Rapidly Exploring Random Tree (RRT) between a random start and end point. These tasks, via simulation, each generate anywhere from a few hundred to a few thousand training instance tuples of camera sensor data, target straight-line trajectory, and the expected avodiance trajectory. To account for the bias favoring perfect orientations, noise was injected into the attitude of the UAV at each step of the simulation before storing the experience pair and taking the next optimal step. Specific details regrading the control algorithms including hyperparameters are avaliable in the appendix.
+	\begin{itemize}
+		\item To generate simulated training data for use during the supervised warm-starting, we created 10 million tasks each consisting of a random world, with an optimim trajectory calculated using Rapidly Exploring Random Tree (RRT) between a random start and end point. 
+		\item These tasks, via simulation, each generate anywhere from a few hundred to a few thousand training instance tuples of camera sensor data, target straight-line trajectory, and the expected avodiance trajectory. 
+		\item To account for the bias favoring perfect orientations, noise was injected into the attitude of the UAV at each step of the simulation before storing the experience pair and taking the next optimal step. 
+		\item Specific details regrading the control algorithms including hyperparameters are avaliable in the appendix.
+	\end{itemize}
 
 	\subsection{Reinforcement Learning} 
-	After warm-starting the network with simulated expert data we fine tuned network parameters using reinforcement learning. A new random world was generated at the start of each episode using the same hyperparameters to those during warm-starting. Reward is credited every 10 meters if the agent is still upright and any closer to the target and again when the agent passed through a 5 meter radius of the target. Discritized reward every 10 meters was used in favor of a more continuous reward such as change in inverse distance to avoid instability problems in the deep network approximation. To improve simulation speed, a second-order dynamic model of roll and pich were used to approximate environment reaction for the first 5 million training iterations, after which a full model was used to fine-tune network parameters.
+		\begin{itemize}
+		\item After warm-starting the network with simulated expert data we fine tuned network parameters using reinforcement learning. 
+		\item A new random world was generated at the start of each episode using the same hyperparameters to those during warm-starting. 
+		\item Reward is credited every 10 meters if the agent is still upright and any closer to the target and again when the agent passed through a 5 meter radius of the target. 
+		\item Discritized reward every 10 meters was used in favor of a more continuous reward such as change in inverse distance to avoid instability problems in the deep network approximation. 
+		\item To improve simulation speed, a second-order dynamic model of roll and pich were used to approximate environment reaction for the first 5 million training iterations, after which a full model was used to fine-tune network parameters.
+	\end{itemize}
 
 
 \section{Results}
