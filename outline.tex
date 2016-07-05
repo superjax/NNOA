@@ -30,11 +30,11 @@
 \normalfont \normalsize
 \textsc{Brigham Young University} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Cool Title \\ % The assignment title
+\huge Practical High Speed Obstacle Avoidance in Unmanned Arieal Vehicals\\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
-\author{authors} % Your name
+\author{James Jackson, Robert Pottorff} % Your name
 
 \date{\normalsize\today} % Today's date or a custom date
 
@@ -42,64 +42,97 @@
 
 \maketitle % Print the title
 
-
-\abstract{Can we fly 45 mph through a simulated environment using deep learning?}
-
-%-------------------------------------------------
-%	PROBLEM 1
-%-------------------------------------------------
-
+\abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed applications. Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep actor-critic neural network trained using a combination of supervised and reinforcement learning technqiues. We successfully control an agent that can fly up to 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simualted data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
 
 \section{Introduction}
-\begin{itemize}
-	\item Obstacle Avoidance
-	\begin{itemize}
-		\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
-		\item FFLOA - first ROAP, uses a heavy, specialized sensor, awesome results.
-		\item Schopferer - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
-		\item Oleynikova - Stereo vision FFLOA
-		\item Saunders - Local memory Voxel Grid-based planning
-		\item Some newer avoidance methods have leveraged the work in deep learning to come up with other obstacle avoidance methods.
-		\item Ross - Supervised Learning obstacle avoidance from manually extracted features - read citations and cited by's
-	\end{itemize}
-\end{itemize}
 
-\begin{itemize}
-	\item Neural Networks
-	\begin{itemize}
-		\item Convoultion NN
-		\item Deep NN
-		\item Relevant Applications
-	\end{itemize}
-\end{itemize}
+	Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
+	At high speeds, however, obstacle avoidance is critical to many of the practical applications
+	
+	At it's heart, obstacle avoidance is about forming a policy $\pi$ that relates an action to a given sensor state $s$.
+	This often means transforming an often noisy, high dimensional sensor space into a high-level abstraction that can make this mapping tractable.
+	
+	Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
+	More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [citation needed] to improve results but maintain a standard post-feature processing pipeline.
+	Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowlege have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
+	
+	Our motivation in this work is to show that the right high-dimensional feature space can enable an agent to perform with greater accuracy and at higher speeds than previous methods.
+	We apply advancements made in reinforcement learning to actively learn high-level representations that maximize performance on obstacle avoidance tasks, enabling us to achieve state-of-the-art performance at high speeds in both simulated and real-world scenarios. 
 
-\section{Approach}
+	Critical to reinforcement learning methods is the capcity to learn via trial and error, often a serious problem for real-world agents where failure is catostrophic.
+	To overcome this problem, we also introduce a method for combining real world and simulated data.
+	The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
 
-\begin{itemize}
-	\item Simulation Description
-	\begin{itemize}
-		\item Using Gazebo
-		\item Using 2nd-order dynamic model of roll and pitch with specified time constants $\zeta=0.707$, $\omega=???$ \textbf{figure out the appropriate response frequency}
-		\item Randomly Generated Environments - define environment
-	\end{itemize}
-	\item Supervised Learning Beginning
-	\begin{itemize}
-		\item Use RRT to plan optimal trajectory
-		\item Use a 2nd-order simplified model of Multirotor dynamics in simulation
-		\item Learned to approximate the RRT plan through environment
-		\item Train NN to extract optimized features for obstacle avoidance
-		\item warm start perception and avoidance network for reinforcement learnin
-	\end{itemize}
-	\item Reinforcement Learning
-	\begin{itemize}
-		\item Cost function is deviation from path weighted with staying away form obstacles
-		\item Eventually learned to 
-	\end{itemize}
-\end{itemize}
+\section{Literature Review}
+
+	\subsection{Obstacle Avoidance}
+		\begin{itemize}
+			\item Traditional Obstacle Avoidance
+			\begin{itemize}
+				\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
+				\item FFLOA~\cite{Scherer2007} - first ROAP, uses a heavy, specialized sensor, awesome results.
+				\item Schopferer~\cite{Schopferer2014} - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
+				\item Oleynikova~\cite{Oleynikova2015} - Stereo vision FFLOA
+				\item Saunders~\cite{Saunders2009} - Local memory Voxel Grid-based planning
+				\item Richter et al.~\cite{Richter2014} - Path planning based on learned probabilities of collision and optimizing a dynamic model
+				\item Jackson~\cite{CEPA} - aimed at reducing limitations imposed by traditional algorithms
+			\end{itemize}
+			\item Machine Learning Obstacle Avoidance
+			\begin{itemize}			
+				\item ALVINN~\cite{Pomerleau1989} - first neural network applied to a land vehicle (ground robot - token reference)
+				\item Michels et al.~\cite{Michels2005} performed obstacle avoidance on a ground vehicles, and successfully applied networks trained on simulated and real life data.  However the meshing of this data is weird.  Manually extracted features (ground robot)
+				\item Hadsell et al.~\cite{Hadsell2009} used a neural network to classify and avoid obstacles at a distance using a stereo vision algorithm - used a convolutional neural network to extract custom features for obstacle avoidance (ground robot.
+				\item Ross~\cite{Ross2013} - Supervised Learning obstacle avoidance from manually extracted features.
+				\item Zhang et al.~\cite{Zhang2015} approximated MPC with a neural network using supervised learning (may not apply to our stuff)
+				\item Kim et al.~\cite{Kim2015} - Monocular camera of indoor flight using a MAV.  Supplied a dataset - expanded~\cite{Ross2013} with an ``advanced classifer'', used a ConvNet, and tried to get the MAV to find targets on its own.
+				\item Giusti et al.~\cite{Guisti2016} demonstrated the application of a DNN which could extract relevant features and follow a previously unknown trail in a forested area.
+			\end{itemize}
+		\end{itemize}
 
 
 
 
+	\subsection{Neural Networks and Reinforcement Learning}
+		Convoultion NN
 
+		Deep Learning \cite{LeCun2015}
+
+		Playing Atari with Deep Reinforcement Learning~\cite{Mnih2013}
+
+		CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING~\cite{Lillicrap2015}
+
+	\subsection{Transfer Learning}
+		Policy Distilation~\cite{Rusu2015}
+
+		Transfer of Style (Gram Matricies)~\cite{Gatys2015}
+		
+		Deep Compression~\cite{Han2015}
+
+
+\section{Approach} 
+
+	To overcome the issues associated with expensive expert flythoughs, we developed two simulation environments. The first of our two environments is a simplified 3D world based on
+	the Gazebo simulation tool which provided us with simulation speed at the expense of realism. The second environment is based on a custom implementation of the Unreal Game Engine and was deisgned to produce photorealistic training data.
+
+	Rather than rely on our environments to train exclusively using reinforcement learning where the policy of the agent would always be enacted via the simulation, we opted instead to use a hybrid approach: warm-starting a randomly-initialized network using supervised learning before finalizing training using the standard reinforcement learning regime. This hybrid approach allowed us to significantly reduce training time and experiment with various topologies and hyperparameters, focusing scarse computational resources on fine-grained policy decisions.
+
+	\subsection{Warm-starting with Supervised Learning} 
+	To generate simulated training data for use during the supervised warm-starting, we created 10 million tasks each consisting of a random world, with an optimim trajectory calculated using Rapidly Exploring Random Tree (RRT) between a random start and end point. These tasks, via simulation, each generate anywhere from a few hundred to a few thousand training instance tuples of camera sensor data, target straight-line trajectory, and the expected avodiance trajectory. To account for the bias favoring perfect orientations, noise was injected into the attitude of the UAV at each step of the simulation before storing the experience pair and taking the next optimal step. Specific details regrading the control algorithms including hyperparameters are avaliable in the appendix.
+
+	\subsection{Reinforcement Learning} 
+	After warm-starting the network with simulated expert data we fine tuned network parameters using reinforcement learning. A new random world was generated at the start of each episode using the same hyperparameters to those during warm-starting. Reward is credited every 10 meters if the agent is still upright and any closer to the target and again when the agent passed through a 5 meter radius of the target. Discritized reward every 10 meters was used in favor of a more continuous reward such as change in inverse distance to avoid instability problems in the deep network approximation. To improve simulation speed, a second-order dynamic model of roll and pich were used to approximate environment reaction for the first 5 million training iterations, after which a full model was used to fine-tune network parameters.
+
+
+\section{Results}
+
+
+\section{Discussion}
+
+
+\section{Appendix}
+
+
+\bibliography{./library}
+\bibliographystyle{ieeetr}
 
 \end{document}
