@@ -30,11 +30,12 @@
 \normalfont \normalsize
 \textsc{Brigham Young University} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Cool Title \\ % The assignment title
+\huge Practical High Speed Obstacle Avoidance in Unmanned Arieal Vehicals\\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
-\author{authors} % Your name
+\author{James Jackson} % Your name
+\author{Robert Pottorff} % Your name
 
 \date{\normalsize\today} % Today's date or a custom date
 
@@ -42,64 +43,84 @@
 
 \maketitle % Print the title
 
-
-\abstract{Can we fly 45 mph through a simulated environment using deep learning?}
-
-%-------------------------------------------------
-%	PROBLEM 1
-%-------------------------------------------------
-
+\abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made
+over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed application. 
+Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep neural network trained with an actor-critic architecure to successfully control an agent that can fly 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simualted data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
 
 \section{Introduction}
-\begin{itemize}
-	\item Obstacle Avoidance
+
+
+\section{Literature Review}
+
 	\begin{itemize}
-		\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
-		\item FFLOA - first ROAP, uses a heavy, specialized sensor, awesome results.
-		\item Schopferer - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
-		\item Oleynikova - Stereo vision FFLOA
-		\item Saunders - Local memory Voxel Grid-based planning
-		\item Some newer avoidance methods have leveraged the work in deep learning to come up with other obstacle avoidance methods.
-		\item Ross - Supervised Learning obstacle avoidance from manually extracted features - read citations and cited by's
+		\item Literature Review
+		\begin{itemize}
+			\item Traditional Obstacle Avoidance
+			\begin{itemize}
+				\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
+				\item FFLOA~\cite{Scherer2007} - first ROAP, uses a heavy, specialized sensor, awesome results.
+				\item Schopferer~\cite{Schopferer2014} - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
+				\item Oleynikova~\cite{Oleynikova2015} - Stereo vision FFLOA
+				\item Saunders~\cite{Saunders2009} - Local memory Voxel Grid-based planning
+				\item Richter et al.~\cite{Richter2014} - Path planning based on learned probabilities of collision and optimizing a dynamic model
+				\item Jackson~\cite{CEPA} - aimed at reducing limitations imposed by traditional algorithms
+			\end{itemize}
+			\item Machine Learning Obstacle Avoidance
+			\begin{itemize}			
+				\item ALVINN~\cite{Pomerleau1989} - first neural network applied to a land vehicle (ground robot - token reference)
+				\item Michels et al.~\cite{Michels2005} performed obstacle avoidance on a ground vehicles, and successfully applied networks trained on simulated and real life data.  However the meshing of this data is weird.  Manually extracted features (ground robot)
+				\item Hadsell et al.~\cite{Hadsell2009} used a neural network to classify and avoid obstacles at a distance using a stereo vision algorithm - used a convolutional neural network to extract custom features for obstacle avoidance (ground robot.
+				\item Ross~\cite{Ross2013} - Supervised Learning obstacle avoidance from manually extracted features.
+				\item Zhang et al.~\cite{Zhang2015} approximated MPC with a neural network using supervised learning (may not apply to our stuff)
+				\item Kim et al.~\cite{Kim2015} - Monocular camera of indoor flight using a MAV.  Supplied a dataset - expanded~\cite{Ross2013} with an ``advanced classifer'', used a ConvNet, and tried to get the MAV to find targets on its own.
+				\item Giusti et al.~\cite{Guisti2016} demonstrated the application of a DNN which could extract relevant features and follow a previously unknown trail in a forested area.
+			\end{itemize}
+		\end{itemize}
+		\begin{itemize}
+			\item Neural Networks and Reinforcement Learning
+			\begin{itemize}
+				\item Convoultion NN
+				\item Playing Atari with Deep Reinforcement Learning - https://arxiv.org/abs/1312.5602
+				\item CONTINUOUS CONTROL WITH DEEP REINFORCEMENT LEARNING - http://arxiv.org/abs/1509.02971
+			\end{itemize}
+		\end{itemize}
+		\begin{itemize}
+			\item Transfer Learning
+			\begin{itemize}
+				\item Policy Distilation - http://arxiv.org/abs/1511.06295
+				\item Transfer of Style (Gram Matricies) - http://arxiv.org/pdf/1508.06576.pdf
+				\item Deep Compression - https://arxiv.org/pdf/1510.00149v5.pdf
+			\end{itemize}
+		\end{itemize}
 	\end{itemize}
-\end{itemize}
 
-\begin{itemize}
-	\item Neural Networks
+\section{Approach} 
+
+	To overcome the issues associated with expensive expert flythoughs, we developed two simulation environments. The first is a simplified 3D world based on
+	the Gazebo simulation tool. This environment provided us with simulation speed at the expense of realism. The second environment is based on a custom implementation of the Unreal Game Engine and was deisgned to produce photorealistic training data.
+
+	Rather than rely on Gazebo as just a standard reinforcement learning environment we opted to use a hybrid approach; warm-starting a randomly-initialized network using supervised learning before finalizing training using a standard reinforcement learning regime. 
+
+	To generate simulated training data for use during the supervised warm-starting, we created 10 million tasks each consisting of a new world of random pylons and walls, random start and end points, and a target optimim trajectory calculated using Rapidly Exploring Random Tree (RRT). These tasks each generate anywhere from a few hundred to a few thousand training instance tuples of camera sensor data, target straight-line trajectory, and the expected avodiance trajectory. To account for the bias favoring perfect orientations, noise was injected into the attitude of the UAV at each step of the simulation before storing the experience pair, a new experience pair was calculated by re-calculating the RRT and taking the next optimal step. Specific details regrading the control algorithms including hyperparameters are avaliable in the appendix.
+
+	For the reinforcement learning phase, a new random world of pylons and walls was generated at the start of each episode using the same hyperparameters to those during warm-starting. Reward is credited every 10 meters if the agent is still upright and any closer to the target and again when the agent passed through a 5 meter radius of the target. Discritized reward every 10 meters was used in favor of a more continuous reward such as change in inverse distance to avoid instability problems in the deep network approximation. To improve simulation speed, a second-order dynamic model of roll and pich were used to approximate environment reaction for the first 5 million training iterations, after which a full model was used to fine-tune network parameters.
+
+
+\section{Results}
+
+
+\section{Conclusion}
+
+
+\section{Appendix}
+
+
 	\begin{itemize}
-		\item Convoultion NN
-		\item Deep NN
-		\item Relevant Applications
+		\item What control algorithms were used to determine the motor commands used for the "optimal next step"
 	\end{itemize}
-\end{itemize}
-
-\section{Approach}
-
-\begin{itemize}
-	\item Simulation Description
-	\begin{itemize}
-		\item Using Gazebo
-		\item Using 2nd-order dynamic model of roll and pitch with specified time constants $\zeta=0.707$, $\omega=???$ \textbf{figure out the appropriate response frequency}
-		\item Randomly Generated Environments - define environment
-	\end{itemize}
-	\item Supervised Learning Beginning
-	\begin{itemize}
-		\item Use RRT to plan optimal trajectory
-		\item Use a 2nd-order simplified model of Multirotor dynamics in simulation
-		\item Learned to approximate the RRT plan through environment
-		\item Train NN to extract optimized features for obstacle avoidance
-		\item warm start perception and avoidance network for reinforcement learnin
-	\end{itemize}
-	\item Reinforcement Learning
-	\begin{itemize}
-		\item Cost function is deviation from path weighted with staying away form obstacles
-		\item Eventually learned to 
-	\end{itemize}
-\end{itemize}
 
 
-
-
-
+\bibliography{./library}
+\bibliographystyle{ieeetr}
 
 \end{document}
