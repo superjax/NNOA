@@ -34,7 +34,13 @@
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
-\author{James Jackson, Robert Pottorff} % Your name
+\author{James Jackson% <-this % stops a space
+\thanks{James Jackson is with the Department of Mechanical Engineering, Brigham Young University
+        {\tt\small jamesjackson@byu.edu}}%
+        , Robert Pottorff
+\thanks{Robert Pottorff is with the Department of Computer Science, Brigham Young University
+        {\tt\small rpottorff@gmail.com}}%
+}
 
 \date{\normalsize\today} % Today's date or a custom date
 
@@ -42,23 +48,24 @@
 
 \maketitle % Print the title
 
-\abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed applications. Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep actor-critic neural network trained using a combination of supervised and reinforcement learning technqiues. We successfully control an agent that can fly up to 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simualted data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
+% \abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed applications. Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep actor-critic neural network trained using a combination of supervised and reinforcement learning technqiues. We successfully control an agent that can fly up to 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simualted data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
 
 \section{Introduction}
 
 \begin{itemize}
 	\item Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
-	\item At high speeds, however, obstacle avoidance is critical to many of the practical applications
+	\item At high speeds obstacle avoidance is hard, and hasn't worked well so far
 \end{itemize}
 	
 \begin{itemize}
-	\item At it's heart, obstacle avoidance is about forming a policy $\pi$ that relates an action to a given sensor state $s$.
-	\item This often means transforming an often noisy, high dimensional sensor space into a high-level abstraction that can make this mapping tractable.
+	\item Obstacle avoidance is a mapping of sensor inputs and all previous states to a limited available action space
+	\item Considering all the sensor data available at high speeds is intractable, but could become tractable given good abstraction
+	\item What is the correct high-level space to appropriately handle obstacle avoidance?
 \end{itemize}
 	
 \begin{itemize}
-	\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
-	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [citation needed] to improve results but maintain a standard post-feature processing pipeline.
+	\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT, SURF, or ORB keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
+	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [image classification] to improve results but maintain a standard post-feature processing pipeline.
 	\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowlege have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
 \end{itemize}
 
@@ -73,7 +80,7 @@
 	\item The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
 \end{itemize}
 
-\section{Literature Review}
+\section{Background}
 
 	\subsection{Traditional Obstacle Avoidance}
 	\begin{itemize}
@@ -84,8 +91,10 @@
 		\item Saunders~\cite{Saunders2009} - Local memory Voxel Grid-based planning
 		\item Richter et al.~\cite{Richter2014} - Path planning based on learned probabilities of collision and optimizing a dynamic model
 		\item Jackson~\cite{CEPA} - aimed at reducing limitations imposed by traditional algorithms
-		\item only a few of these algorithms are fast enough to navigate a forest at 72km/h and only with expensive equipment
-		\item another reason?
+		\item none of these algorithms are fast enough to navigate a forest at 72km/h
+		\item Expensive map creation
+		\item dependence on SLAM
+		\item assume nominal forward velocity
 	\end{itemize}
 
 	\subsection{Reinforcement Learning}
@@ -93,19 +102,19 @@
 		\item reinforcement learning is the process of learning a control policy to an agent by way of a reward signal
 		\item this is in contrast to supervised learning where a function is approximated using pairs of input and output signals for example: \cite{Ross2013}
 		\item formally this can be constructed as maximizing discounted total future reward over the execution of the policy
-		\item [math]
+		\item \[math\]
 		\item optimal action-value functions follow the form of Bellman equation
-		\item [math]
+		\item \[math\]
 		\item generally, reinforcement learning algorithms estimate $Q*$ using iterative update [math] \cite{Sutton:1998:IRL:551283}
 		\item this is impractical for high dimensional feature spaces, so recently deep neural networks have been used to approximate $Q*$ \cite{Mnih2013}
-		\item applications of reinforcement learning to robotic motion in \cite{DBLP:conf/icra/KohlS04} \cite{DBLP:conf/iros/TedrakeZS04} \cite{geng2005fast} \cite{bagnell2001autonomous} \cite{riedmiller2009reinforcement}
+		\item applications of reinforcement learning to robotic motion in \cite{DBLP:conf/icra/KohlS04,DBLP:conf/iros/TedrakeZS04,geng2005fast,bagnell2001autonomous, riedmiller2009reinforcement}
 		\item a more complete survey of reinforcement learning in robotics can be seen in \cite{kober2013reinforcement}
 	\end{itemize}
 
 	\subsection{Deep Neural Networks}
 	\begin{itemize}
 		\item neural networks are a general function approximator that use alternating layers of linear and non-linear operations with parameters that are optimized with respect to a cost function
-		\item in context of obstacle avoidance, neural networks have been used in ALVINN \cite{Pomerleau1989}, \cite{riedmiller2009reinforcement}
+		\item in context of obstacle avoidance, neural networks have been used in ALVINN \cite{Pomerleau1989,Michels2005,riedmiller2009reinforcement}
 		\item recently, a special type of neural network called a convolutional neural networks \cite{DBLP:journals/corr/SzegedyLJSRAEVR14} has vastly improved performance in many vision-based tasks
 		\item convolutional neural networks have layers that convolve learned filters across the input producing spatially-aware activations
 		\item because of their performance, convnets are extremely common in vision applications
@@ -122,9 +131,17 @@
 		\item Transfering from simulation to real-life is difficult
 		\item transfer learning is the process of transfering knowlege embeded in one network into another network
 		\item in our case we want to transfer learning from simulation to the real world
-		\item like that seen in \cite{Michels2005} [performed obstacle avoidance on a ground vehicles, and successfully applied networks trained on simulated and real life data.  However the meshing of this data is weird.  Manually extracted features (ground robot)]
+		\item unlike~\cite{Michels2005}, true transferred learning augments networks trained on real-world data with knowledge embedded from a network trained in simulation, rather than an ensemble-like method.
 		\item in the context of reinforcement learning, recent work has been done with policy distilation \cite{Rusu2015} and progressive networks \cite{Rusu2016}
-		\item in the context of style transfer, pioneering work \cite{Gatys2015} has been done with gram matricies
+		\item These techniques have demonstrated successful demonstrations of transferred learning
+		\item A new method, which we introduce here, applies techniques originally developed for style transfer to agent policy~\cite{Gatys2015}
+	\end{itemize}
+
+	\subsection{Application of Style Transfer to Policy Transfer}
+	\begin{itemize}
+		\item recent work has shown gram matricies to be effective at transfering style between images \cite{Gatys2015}
+		\item this idea is simple, encourage neurons to fire in a similar pattern between networks
+		\item we apply a similar technique to transfer high-level abstractions learned in simulation to networks trained with expert data
 	\end{itemize}
 
 
@@ -187,7 +204,54 @@
 
 \section{Results}
 
-\section{Discussion}
+\begin{itemize}
+	\item Simulator A Results
+	\begin{itemize}
+		\item How well does the network perform after supervised learning perform? See figure~\ref{fig:prob_completion_vs_epoch}
+		\item How well does the network perform after reinforcement learning? See figure~\ref{fig:prob_completion_vs_epoch}
+		\item How well does sup+reinforce work? See figure~\ref{fig:prob_completion_vs_epoch}
+		\begin{figure}
+			\includegraphics[scale=0.5]{fig/prop_of_completion_vs_epoch.png}
+			\caption{probability of completion versus training epoch}
+			\label{fig:prob_completion_vs_epoch}
+		\end{figure}
+	\end{itemize}
+
+	\item Transfer Learning
+	\begin{itemize}
+	    \item What was the impact of the Reinforcement learning phase of Simulator B after transfer?
+		\item how many fewer epochs were required with transferred learning?
+		\item Convolution Filters Between Networks
+		\item How similar are the policies?  What are the differences?
+		\item Compare style transfer to Policy Distillation and Progressive Networks
+	\end{itemize}
+
+	\item Network Tuning
+	\begin{itemize}
+		\item What did we have to do to make the network learn?
+		\item Comparison of Topologies
+		\item Comparison of Hyper-Parameters
+		\item Time to Convergence
+	\end{itemize}
+
+	\item Simulator B Results
+	\begin{itemize}
+		\item How well did it ultimately perform?
+		\item Discussion of Speed (we went really fast)
+	\end{itemize}
+
+\end{itemize}
+
+\section{Conclusion}
+
+\begin{itemize}
+	\item It works
+	\item We went fast
+	\item We learned some stuff about how style transfer can be used to transfer learning
+	\item We learned how to transfer learning on robotic simulations
+	\item We want to try it in real life
+	\item There are other things we want to try too
+\end{itemize}
 
 
 \section{Appendix}
