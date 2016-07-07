@@ -21,7 +21,7 @@ pages = {305--313},
 title = {{Alvinn: An autonomous land vehicle in a neural network}},
 year = {1989}
 }
-@article{Guisti2016},
+@article{Guisti2016,
 abstract = {Download Citation Email Print Request Permissions We study the problem of perceiving forest or mountain trails from a single monocular image acquired from the viewpoint of a robot traveling on the trail itself. Previous literature focused on trail segmentation, and used low-level features such as image saliency or appearance contrast; we propose a different approach based on a deep neural network used as a supervised image classifier. By operating on the whole image at once, our system outputs the main direction of the trail compared to the viewing direction. Qualitative and quantitative results computed on a large real-world dataset (which we provide for download) show that our approach outperforms alternatives, and yields an accuracy comparable to the accuracy of humans that are tested on the same image classification task. Preliminary results on using this information for quadrotor control in unseen trails are reported. To the best of our knowledge, this is the first letter that describes an approach to perceive forest trials, which is demonstrated on a quadrotor micro aerial vehicle.},
 author = {Guisti Alessandro, Guzzi Jerome, Circesan Dan C., He Fang-Lin, Rodriguez Juan P., Fontana Flavio, Faessler Matthias, Forster Christian, Schmidhuber Jurgen, Di Caro Gianni, Scaramuzza Davide, Gambardella Luca M.},
 doi = {10.1109/LRA.2015.2509024},
@@ -48,21 +48,6 @@ title = {{Learning long-range vision for autonomous off-road driving}},
 url = {http://onlinelibrary.wiley.com/doi/10.1002/rob.20276/abstract http://onlinelibrary.wiley.com/doi/10.1002/rob.20276/pdf},
 volume = {26},
 year = {2009}
-}
-@article{Ross2010,
-abstract = {Sequential prediction problems such as imitation learning, where future observations depend on previous predictions (actions), violate the common i.i.d. assumptions made in statistical learning. This leads to poor performance in theory and often in practice. Some recent approaches provide stronger guarantees in this setting, but remain somewhat unsatisfactory as they train either non-stationary or stochastic policies and require a large number of iterations. In this paper, we propose a new iterative algorithm, which trains a stationary deterministic policy, that can be seen as a no regret algorithm in an online learning setting. We show that any such no regret algorithm, combined with additional reduction assumptions, must find a policy with good performance under the distribution of observations it induces in such sequential settings. We demonstrate that this new approach outperforms previous approaches on two challenging imitation learning problems and a benchmark sequence labeling problem.},
-archivePrefix = {arXiv},
-arxivId = {1011.0686},
-author = {Ross, Stephane and Gordon, Geoffrey J and Bagnell, J Andrew},
-eprint = {1011.0686},
-file = {:home/capn/Documents/1011.0686v3.pdf:pdf},
-issn = {{\textless}null{\textgreater}},
-journal = {Aistats},
-pages = {627--635},
-title = {{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}},
-url = {http://arxiv.org/abs/1011.0686},
-volume = {15},
-year = {2010}
 }
 @article{Matsumoto2014,
 abstract = {The growing public interest for Unmanned Air Systems (UAS) applications has stimulated the debate over the integration of this kind of aircraft into the civil aviation system. However, the concept of not having a human pilot inside the aircraft presents uncertainties that may impede the creation of proper regulation. Having safety as the main concern for civil aviation, one important principle of aviation to be addressed in an UAS is collision avoidance, a traditionally pilot-dependent functionality. Therefore, we propose a method for implementing a learning-based Piloting Autonomous System. The proposed approach utilizes the concept of `Learning from Demonstration' in order to define a behavior for the autonomous aircraft based on the maneuvers executed by a human pilot. By doing so, we expect the Piloting Autonomous System to be able to compensate for the lack of a human pilot in the aircraft. Therefore, the proposed approach would represent a possible implementation of an autonomous UAS that presents the same safety levels observed in (human-based) civil aviation. Additionally, we identify metrics that can be used to select a suitable learning-based method and to compare its performance to those observed in manned aircraft.},
@@ -297,26 +282,6 @@ journal = {2009 IEEE/RSJ International Conference on Intelligent Robots and Syst
 pages = {3924--3930},
 title = {{Efficient cost computation in cost map planning for non-circular robots}},
 year = {2009}
-}
-@article{Ross2013,
-abstract = {Autonomous navigation for large Unmanned Aerial Vehicles (UAVs) is fairly straight-forward, as expensive sensors and monitoring devices can be employed. In contrast, obstacle avoidance remains a challenging task for Micro Aerial Vehicles (MAVs) which operate at low altitude in cluttered environments. Unlike large vehicles, MAVs can only carry very light sensors, such as cameras, making autonomous navigation through obstacles much more challenging. In this paper, we describe a system that navigates a small quadrotor helicopter autonomously at low altitude through natural forest environments. Using only a single cheap camera to perceive the environment, we are able to maintain a constant velocity of up to 1.5m/s. Given a small set of human pilot demonstrations, we use recent state-of-the-art imitation learning techniques to train a controller that can avoid trees by adapting the MAVs heading. We demonstrate the performance of our system in a more controlled environment indoors, and in real natural forest environments outdoors.},
-annote = {This method basically teaches the quad to fly itself based on the actions of an expert pilot.
-
-It uses the DAgger algorithm to expand the training set to include data captured during autonomous flight, not seen during the training segment.
-
-Off-board processing done with an ARDrone, using a forward-facing monocular camera},
-archivePrefix = {arXiv},
-arxivId = {arXiv:1211.1690v1},
-author = {Ross, Stephane and Melik-Barkhudarov, Narek and Shankar, Kumar Shaurya and Wendel, Andreas and Dey, Debadeepta and Bagnell, J. Andrew and Hebert, Martial},
-doi = {10.1109/ICRA.2013.6630809},
-eprint = {arXiv:1211.1690v1},
-file = {:home/capn/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Ross et al. - 2013 - Learning monocular reactive UAV control in cluttered natural environments.pdf:pdf},
-isbn = {9781467356411},
-issn = {10504729},
-journal = {Proceedings - IEEE International Conference on Robotics and Automation},
-pages = {1765--1772},
-title = {{Learning monocular reactive UAV control in cluttered natural environments}},
-year = {2013}
 }
 @article{Goerzen2012b,
 author = {Goerzen, Chad and Whalley, Matthew},
@@ -759,4 +724,75 @@ year = {2015}
   pages={0278364913495721},
   year={2013},
   publisher={SAGE Publications}
+}
+
+@inproceedings{bagnell2001autonomous,
+  title={Autonomous helicopter control using reinforcement learning policy search methods},
+  author={Bagnell, J Andrew and Schneider, Jeff G},
+  booktitle={Robotics and Automation, 2001. Proceedings 2001 ICRA. IEEE International Conference on},
+  volume={2},
+  pages={1615--1620},
+  year={2001},
+  organization={IEEE}
+}
+
+@article{riedmiller2009reinforcement,
+  title={Reinforcement learning for robot soccer},
+  author={Riedmiller, Martin and Gabel, Thomas and Hafner, Roland and Lange, Sascha},
+  journal={Autonomous Robots},
+  volume={27},
+  number={1},
+  pages={55--73},
+  year={2009},
+  publisher={Springer}
+}
+
+@article{riedmiller2009reinforcement,
+  title={Reinforcement learning for robot soccer},
+  author={Riedmiller, Martin and Gabel, Thomas and Hafner, Roland and Lange, Sascha},
+  journal={Autonomous Robots},
+  volume={27},
+  number={1},
+  pages={55--73},
+  year={2009},
+  publisher={Springer}
+}
+
+
+@inproceedings{lowe1999object,
+  title={Object recognition from local scale-invariant features},
+  author={Lowe, David G},
+  booktitle={Computer vision, 1999. The proceedings of the seventh IEEE international conference on},
+  volume={2},
+  pages={1150--1157},
+  year={1999},
+  organization={Ieee}
+}
+
+@inproceedings{bay2006surf,
+  title={Surf: Speeded up robust features},
+  author={Bay, Herbert and Tuytelaars, Tinne and Van Gool, Luc},
+  booktitle={European conference on computer vision},
+  pages={404--417},
+  year={2006},
+  organization={Springer}
+}
+
+@inproceedings{rublee2011orb,
+  title={ORB: An efficient alternative to SIFT or SURF},
+  author={Rublee, Ethan and Rabaud, Vincent and Konolige, Kurt and Bradski, Gary},
+  booktitle={2011 International conference on computer vision},
+  pages={2564--2571},
+  year={2011},
+  organization={IEEE}
+}
+
+
+@incollection{thrun1995lifelong,
+  title={Lifelong robot learning},
+  author={Thrun, Sebastian and Mitchell, Tom M},
+  booktitle={The biology and technology of intelligent autonomous agents},
+  pages={165--196},
+  year={1995},
+  publisher={Springer}
 }
