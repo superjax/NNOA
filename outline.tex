@@ -30,7 +30,7 @@
 \normalfont \normalsize
 \textsc{Brigham Young University} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Practical High Speed Obstacle Avoidance in Unmanned Arieal Vehicals\\ % The assignment title
+\huge Practical High Speed Obstacle Avoidance in Unmanned Aerial Vehicles\\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
@@ -48,12 +48,12 @@
 
 \maketitle % Print the title
 
-% \abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed applications. Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep actor-critic neural network trained using a combination of supervised and reinforcement learning technqiues. We successfully control an agent that can fly up to 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simualted data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
+% \abstract{Practical applications of UAVs are often limited by their ability to react to obstacles at high speeds. Although much progress has been made over the last few decades, current obstacle avoidance methods are either too slow or rely on unreasonable assumptions for some high-speed applications. Leaning on incredible recent successes applying deep reinforcement learning to high dimensional tasks, our agent consists of a deep actor-critic neural network trained using a combination of supervised and reinforcement learning techniques. We successfully control an agent that can fly up to 72km/h over various simulated obstacle-ridden terrain using only raw sensor data as input. Using inter-network statistics as a component of the cost function, we also demonstrate the successful transfer of learning from networks trained on simulated data, to agents running on real-world data and thereby achieve state-of-the-art results in real-world trials.}
 
 \section{Introduction}
 
 \begin{itemize}
-	\item Obstacle avoidance is an essential component of a safe operation of an autonomus agent.
+	\item Obstacle avoidance is an essential component of a safe operation of an autonomous agent.
 	\item At high speeds obstacle avoidance is hard, and hasn't worked well so far
 \end{itemize}
 	
@@ -65,8 +65,8 @@
 	
 \begin{itemize}
 	\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT, SURF, or ORB keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
-	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recongition tasks [image classification] to improve results but maintain a standard post-feature processing pipeline.
-	\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowlege have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
+	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recognition tasks [image classification] to improve results but maintain a standard post-feature processing pipeline.
+	\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowledge have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
 \end{itemize}
 
 \begin{itemize}	
@@ -75,7 +75,7 @@
 \end{itemize}
 
 \begin{itemize}
-	\item Critical to reinforcement learning methods is the capcity to learn via trial and error, often a serious problem for real-world agents where failure is catostrophic.
+	\item Critical to reinforcement learning methods is the capacity to learn via trial and error, often a serious problem for real-world agents where failure is catastrophic.
 	\item To overcome this problem, we also introduce a method for combining real world and simulated data.
 	\item The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
 \end{itemize}
@@ -84,9 +84,9 @@
 
 	\subsection{Traditional Obstacle Avoidance}
 	\begin{itemize}
-		\item Most obstacle avoidance algorigthms have focused on designing a closed-form avoidance rule given specific inputs.
+		\item Most obstacle avoidance algorithms have focused on designing a closed-form avoidance rule given specific inputs.
 		\item FFLOA~\cite{Scherer2007} - first ROAP, uses a heavy, specialized sensor, awesome results.
-		\item Schopferer~\cite{Schopferer2014} - closest to optimal ROAP.  Considers kinematic feasibility of avoidane - What sensor did it use?
+		\item Schopferer~\cite{Schopferer2014} - closest to optimal ROAP.  Considers kinematic feasibility of avoidance - What sensor did it use?
 		\item Oleynikova~\cite{Oleynikova2015} - Stereo vision FFLOA
 		\item Saunders~\cite{Saunders2009} - Local memory Voxel Grid-based planning
 		\item Richter et al.~\cite{Richter2014} - Path planning based on learned probabilities of collision and optimizing a dynamic model
@@ -121,25 +121,25 @@
 		\item successes include classifying obstacles \cite{Hadsell2009} 
 		\item and extracting features for obstacle avoidance
 		\item and improving existing algorithms \cite{Kim2015}
-		\item most recently, \cite{Guisti2016} could follow an unknown trail in a forrested area by training a DNN to minimize control error relative to an expert data set
+		\item most recently, \cite{Guisti2016} could follow an unknown trail in a forested area by training a DNN to minimize control error relative to an expert data set
 	\end{itemize}
 
 	\subsection{Transfer Learning}
 	\begin{itemize}
 		\item Deep learning has so many parameters, needs tons of data AND reinforcement learning needs failure therefore simulation is practically only option
 		\item Simulation is cheap, but comes at the expense of realism
-		\item Transfering from simulation to real-life is difficult
-		\item transfer learning is the process of transfering knowlege embeded in one network into another network
+		\item Transferring from simulation to real-life is difficult
+		\item transfer learning is the process of transferring knowledge embedded in one network into another network
 		\item in our case we want to transfer learning from simulation to the real world
 		\item unlike~\cite{Michels2005}, true transferred learning augments networks trained on real-world data with knowledge embedded from a network trained in simulation, rather than an ensemble-like method.
-		\item in the context of reinforcement learning, recent work has been done with policy distilation \cite{Rusu2015} and progressive networks \cite{Rusu2016}
+		\item in the context of reinforcement learning, recent work has been done with policy distillation \cite{Rusu2015} and progressive networks \cite{Rusu2016}
 		\item These techniques have demonstrated successful demonstrations of transferred learning
 		\item A new method, which we introduce here, applies techniques originally developed for style transfer to agent policy~\cite{Gatys2015}
 	\end{itemize}
 
 	\subsection{Application of Style Transfer to Policy Transfer}
 	\begin{itemize}
-		\item recent work has shown gram matricies to be effective at transfering style between images \cite{Gatys2015}
+		\item recent work has shown gram matrices to be effective at transferring style between images \cite{Gatys2015}
 		\item this idea is simple, encourage neurons to fire in a similar pattern between networks
 		\item we apply a similar technique to transfer high-level abstractions learned in simulation to networks trained with expert data
 	\end{itemize}
@@ -150,11 +150,18 @@
 	\item what is simulator A?
 	\begin{itemize}
 		\item built in gazebo
-		\item obstacles are pylons and walls randomly placed
+		\item obstacles are pylons and walls randomly placed (See Figure~\ref{fig:sample_environment})
 		\item second order dynamics for pitch/roll/yaw
 		\item first order dynamics for thrust
-		\item colision calculation
-		\item world is guarnteed to be traversable and meet constraints so that turning radius at n mph is at least x, and \cite{Richter2014}-like 
+		\item collision calculation
+		\item world is guaranteed to be traversable and meet constraints so that turning radius at n mph is at least x, and \cite{Richter2014}-like 
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/sample_environment.png}
+		  \caption{Sample Simulated Environment}
+		  \label{fig:sample_environment}
+		\end{figure}
 	\end{itemize}
 
 	\item what is simulator B?
@@ -165,8 +172,8 @@
 
 	\item what does our network look like?
 	\begin{itemize}
-		\item identical structure to \cite{Lillicrap2015} using additonal techniques of prioritized replay [citation needed], etc.
-		\item hyperparameters
+		\item identical structure to \cite{Lillicrap2015} using additional techniques of prioritized replay [citation needed], etc.
+		\item hyper-parameters
 		\item topology
 		\item picture
 	\end{itemize}
@@ -186,12 +193,12 @@
 		\item new worlds generated every episode similar to supervised worlds
 		\item cost function / q learning math
 		\item terminal state is defined as 5 meter radius to goal
-		\item discritized reward every 10 meters vs change in inverse distance
-		\item why discritized reward?
+		\item discretized reward every 10 meters vs change in inverse distance
+		\item why discretized reward?
 		\item negative reward on crash / death
 	\end{itemize}
 
-	\item how do we transfer knowlege from network A to network B
+	\item how do we transfer knowledge from network A to network B
 	\begin{itemize}
 		\item network A (trained for simulation) has identical structure to network B (trained for real-world)
 		\item train network A using simulation
@@ -207,11 +214,12 @@
 \begin{itemize}
 	\item Simulator A Results
 	\begin{itemize}
-		\item How well does the network perform after supervised learning perform? See figure~\ref{fig:prob_completion_vs_epoch}
+		\item How well does the network perform after supervised learning perform? (See Figure~\ref{fig:prob_completion_vs_epoch})
 		\item How well does the network perform after reinforcement learning? See figure~\ref{fig:prob_completion_vs_epoch}
 		\item How well does sup+reinforce work? See figure~\ref{fig:prob_completion_vs_epoch}
 		\begin{figure}
-			\includegraphics[scale=0.5]{fig/prop_of_completion_vs_epoch.png}
+		  \centering
+			\includegraphics[width=0.5\textwidth]{fig/prob_of_completion_vs_epoch.jpg}
 			\caption{probability of completion versus training epoch}
 			\label{fig:prob_completion_vs_epoch}
 		\end{figure}
@@ -219,11 +227,46 @@
 
 	\item Transfer Learning
 	\begin{itemize}
-	    \item What was the impact of the Reinforcement learning phase of Simulator B after transfer?
+	    \item What was the impact of the Reinforcement learning phase of Simulator B after transfer? (See Figure~\ref{fig:transfer_learning_vs_RL_sim_B})
 		\item how many fewer epochs were required with transferred learning?
-		\item Convolution Filters Between Networks
-		\item How similar are the policies?  What are the differences?
+		\item Convolution Filters Between Networks (See Figure~\ref{fig:filter_comparison})
+		\item How similar are the policies?  What are the differences? (See Figure~\ref{fig:policy_difference})
 		\item Compare style transfer to Policy Distillation and Progressive Networks
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/transfer_learning_vs_RL_sim_B.jpg}
+		  \caption{Probability of Completion for the network using style transfer verses a standard reinforcement learner.  The network using transfer learning did better}
+		  \label{fig:transfer_learning_vs_RL_sim_B}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/policy_difference.jpg}
+		  \caption{Difference in policy between network trained in Simulator A vs Simulator B}
+		  \label{fig:policy_difference}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/filter_comparison.jpg}
+		  \caption{Comparison of Convolutional Filters learned by network trained in Simulator A vs Simulator B}
+		  \label{fig:filter_comparison}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/quadcopter_in_simulation.png}
+		  \caption{Quadcopter in Simulation A}
+		  \label{fig:sim_A}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/quadcopter_in_simulation_B.png}
+		  \caption{Quadcopter in Simulation B}
+		  \label{fig:sim_B}
+		\end{figure}
+
 	\end{itemize}
 
 	\item Network Tuning
