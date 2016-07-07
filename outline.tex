@@ -53,36 +53,44 @@
 \section{Introduction}
 
 \begin{itemize}
-	\item Obstacle avoidance is an essential component of a safe operation of an autonomous agent.
-	\item At high speeds obstacle avoidance is hard, and hasn't worked well so far
-\end{itemize}
-	
-\begin{itemize}
-	\item Obstacle avoidance is a mapping of sensor inputs and all previous states to a limited available action space
-	\item Considering all the sensor data available at high speeds is intractable, but could become tractable given good abstraction
-	\item What is the correct high-level space to appropriately handle obstacle avoidance?
-\end{itemize}
-	
-\begin{itemize}
-	\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT, SURF, or ORB keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
-	\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recognition tasks [image classification] to improve results but maintain a standard post-feature processing pipeline.
-	\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowledge have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
-\end{itemize}
+	\item Why obstacle avoidance?
+	\begin{itemize}
+		\item Obstacle avoidance is an essential component of a safe operation of an autonomous agent.
+		\item At high speeds obstacle avoidance is hard, and hasn't worked well so far
+	\end{itemize}
 
-\begin{itemize}	
-	\item Our motivation in this work is to show that the right high-dimensional feature space can enable an agent to perform with greater accuracy and at higher speeds than previous methods.
-	\item We apply advancements made in reinforcement learning to actively learn high-level representations that maximize performance on obstacle avoidance tasks, enabling us to achieve state-of-the-art performance at high speeds in both simulated and real-world scenarios. 
-\end{itemize}
+	\item CS approach to Obstacle Avoidance
+	\begin{itemize}
+		\item Obstacle avoidance is a mapping of sensor inputs and all previous states to a limited available action space
+		\item Considering all the sensor data available at high speeds is intractable, but could become tractable given good abstraction
+		\item What is the correct high-level space to appropriately handle obstacle avoidance?
+	\end{itemize}
+		
+	\item Traditional Approach to Obstacle Avoidance
+	\begin{itemize}
+		\item Historically, most obstacle avoidance algorithms have relied on hand-crafted, closed-form rules applied to given fixed transformations of the sensor space such as SIFT, SURF, or ORB keypoints [http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=790410]
+		\item More recently, some methods have leveraged recent work in deep learning to apply high-level abstractions learned from object recognition tasks [image classification] to improve results but maintain a standard post-feature processing pipeline.
+		\item Few of these methods have shown robustness to sensor choice, particularly at high speeds, and none to our knowledge have studied the impact of specialized high level abstractions learned exclusively for obstacle avoidance.
+	\end{itemize}
 
-\begin{itemize}
-	\item Critical to reinforcement learning methods is the capacity to learn via trial and error, often a serious problem for real-world agents where failure is catastrophic.
-	\item To overcome this problem, we also introduce a method for combining real world and simulated data.
-	\item The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
+	\item How to apply reinforcement learning to Obstacle Avoidance
+	\begin{itemize}	
+		\item Our motivation in this work is to show that the right high-dimensional feature space can enable an agent to perform with greater accuracy and at higher speeds than previous methods.
+		\item We apply advancements made in reinforcement learning to actively learn high-level representations that maximize performance on obstacle avoidance tasks, enabling us to achieve state-of-the-art performance at high speeds in both simulated and real-world scenarios. 
+	\end{itemize}
+
+	\item Motivate Transfer learning applied to Obstacle Avoidance
+	\begin{itemize}
+		\item Critical to reinforcement learning methods is the capacity to learn via trial and error, often a serious problem for real-world agents where failure is catastrophic.
+		\item To overcome this problem, we also introduce a method for combining real world and simulated data.
+		\item The success of reinforcement learning to this domain points the way to a generalized algorithm for high speed control that is robust to sensor choice.
+	\end{itemize}
 \end{itemize}
 
 \section{Background}
 
-	\subsection{Traditional Obstacle Avoidance}
+\begin{itemize}
+\item Traditional Obstacle Avoidance
 	\begin{itemize}
 		\item Most obstacle avoidance algorithms have focused on designing a closed-form avoidance rule given specific inputs.
 		\item FFLOA~\cite{Scherer2007} - first ROAP, uses a heavy, specialized sensor, awesome results.
@@ -97,7 +105,7 @@
 		\item assume nominal forward velocity
 	\end{itemize}
 
-	\subsection{Reinforcement Learning}
+\item  Reinforcement Learning
 	\begin{itemize}
 		\item reinforcement learning is the process of learning a control policy to an agent by way of a reward signal
 		\item this is in contrast to supervised learning where a function is approximated using pairs of input and output signals for example: \cite{Ross2013}
@@ -111,7 +119,7 @@
 		\item a more complete survey of reinforcement learning in robotics can be seen in \cite{kober2013reinforcement}
 	\end{itemize}
 
-	\subsection{Deep Neural Networks}
+\item Deep Neural Networks
 	\begin{itemize}
 		\item neural networks are a general function approximator that use alternating layers of linear and non-linear operations with parameters that are optimized with respect to a cost function
 		\item in context of obstacle avoidance, neural networks have been used in ALVINN \cite{Pomerleau1989,Michels2005,riedmiller2009reinforcement}
@@ -124,7 +132,7 @@
 		\item most recently, \cite{Guisti2016} could follow an unknown trail in a forested area by training a DNN to minimize control error relative to an expert data set
 	\end{itemize}
 
-	\subsection{Transfer Learning}
+\item Transfer Learning
 	\begin{itemize}
 		\item Deep learning has so many parameters, needs tons of data AND reinforcement learning needs failure therefore simulation is practically only option
 		\item Simulation is cheap, but comes at the expense of realism
@@ -137,12 +145,13 @@
 		\item A new method, which we introduce here, applies techniques originally developed for style transfer to agent policy~\cite{Gatys2015}
 	\end{itemize}
 
-	\subsection{Application of Style Transfer to Policy Transfer}
+\item Application of Style Transfer to Policy Transfer
 	\begin{itemize}
 		\item recent work has shown gram matrices to be effective at transferring style between images \cite{Gatys2015}
 		\item this idea is simple, encourage neurons to fire in a similar pattern between networks
 		\item we apply a similar technique to transfer high-level abstractions learned in simulation to networks trained with expert data
 	\end{itemize}
+\end{itemize}
 
 
 \section{Approach} 
