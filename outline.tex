@@ -30,7 +30,7 @@
 \normalfont \normalsize
 \textsc{Brigham Young University} \\ [25pt] % Your university, school and/or department name(s)
 \horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
-\huge Practical High Speed Obstacle Avoidance in Unmanned Arieal Vehicals\\ % The assignment title
+\huge Practical High Speed Obstacle Avoidance in Unmanned Aerial Vehicles\\ % The assignment title
 \horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
 }
 
@@ -139,26 +139,40 @@
 
 	\subsection{Application of Style Transfer to Policy Transfer}
 	\begin{itemize}
-		\item recent work has shown gram matrices to be effective at transferring style between images \cite{Gatys2015}
-		\item this idea is simple: encourage neurons to fire in a similar pattern between networks
+		\item recent work has shown gram matrices to be an effective way of capturing style of images \cite{Gatys2015}
+		\item style transfer works by looking at the inner product of all neurons, and adding an addition component to the cost function
+		\item \[math\]
 		\item we apply a similar technique to transfer high-level abstractions learned in simulation to networks trained with expert data
+		\item we do this by treating networks trained on simulated data as a source network, and networks trained on real data as a target network
+		\item the additional constraint added during the training of the target network and is defined by the difference in the gram matrices between
+		\item the two networks given the same input image
+		\item \[math\]
+		\item this constrains the manifold of target network parameters to a stricter subspace defined by the source network, accelerating learning
 	\end{itemize}
 
 
 \section{Approach} 
 \begin{itemize}
-	\item From a high level, we 
+	\item From a high level, we construct two simulators
+	\item we train a combination of supervised and reinforcement learning on the first
+	\item followed by fine-tuning using reinforcement learning in the second simulator
 \end{itemize}
 
 \begin{itemize}
 	\item what is simulator A?
 	\begin{itemize}
 		\item built in gazebo
-		\item obstacles are pylons and walls randomly placed
+		\item obstacles are pylons and walls randomly placed (See Figure~\ref{fig:sample_environment})
 		\item second order dynamics for pitch/roll/yaw
 		\item first order dynamics for thrust
 		\item collision calculation
 		\item world is guaranteed to be traversable and meet constraints so that turning radius at n mph is at least x, and \cite{Richter2014}-like 
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/sample_environment.png}
+		  \caption{Sample Simulated Environment}
+		  \label{fig:sample_environment}
+		\end{figure}
 	\end{itemize}
 
 	\item what is simulator B?
@@ -211,11 +225,12 @@
 \begin{itemize}
 	\item Simulator A Results
 	\begin{itemize}
-		\item How well does the network perform after supervised learning perform? See figure~\ref{fig:prob_completion_vs_epoch}
+		\item How well does the network perform after supervised learning perform? (See Figure~\ref{fig:prob_completion_vs_epoch})
 		\item How well does the network perform after reinforcement learning? See figure~\ref{fig:prob_completion_vs_epoch}
 		\item How well does sup+reinforce work? See figure~\ref{fig:prob_completion_vs_epoch}
 		\begin{figure}
-			\includegraphics[scale=0.5]{fig/prop_of_completion_vs_epoch.png}
+		  \centering
+			\includegraphics[width=0.5\textwidth]{fig/prob_of_completion_vs_epoch.jpg}
 			\caption{probability of completion versus training epoch}
 			\label{fig:prob_completion_vs_epoch}
 		\end{figure}
@@ -223,11 +238,46 @@
 
 	\item Transfer Learning
 	\begin{itemize}
-	    \item What was the impact of the Reinforcement learning phase of Simulator B after transfer?
+	    \item What was the impact of the Reinforcement learning phase of Simulator B after transfer? (See Figure~\ref{fig:transfer_learning_vs_RL_sim_B})
 		\item how many fewer epochs were required with transferred learning?
-		\item Convolution Filters Between Networks
-		\item How similar are the policies?  What are the differences?
+		\item Convolution Filters Between Networks (See Figure~\ref{fig:filter_comparison})
+		\item How similar are the policies?  What are the differences? (See Figure~\ref{fig:policy_difference})
 		\item Compare style transfer to Policy Distillation and Progressive Networks
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/transfer_learning_vs_RL_sim_B.jpg}
+		  \caption{Probability of Completion for the network using style transfer verses a standard reinforcement learner.  The network using transfer learning did better}
+		  \label{fig:transfer_learning_vs_RL_sim_B}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/policy_difference.jpg}
+		  \caption{Difference in policy between network trained in Simulator A vs Simulator B}
+		  \label{fig:policy_difference}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/filter_comparison.jpg}
+		  \caption{Comparison of Convolutional Filters learned by network trained in Simulator A vs Simulator B}
+		  \label{fig:filter_comparison}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/quadcopter_in_simulation.png}
+		  \caption{Quadcopter in Simulation A}
+		  \label{fig:sim_A}
+		\end{figure}
+
+		\begin{figure}
+		  \centering
+		  \includegraphics[width=0.5\textwidth]{fig/quadcopter_in_simulation_B.png}
+		  \caption{Quadcopter in Simulation B}
+		  \label{fig:sim_B}
+		\end{figure}
+
 	\end{itemize}
 
 	\item Network Tuning
