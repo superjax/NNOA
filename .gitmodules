@@ -1,0 +1,6 @@
+[submodule "ws/src/fcu_sim"]
+	path = ws/src/fcu_sim
+	url = https://github.com/BYU-MAGICC/fcu_sim.git
+[submodule "ws/src/fcu_common"]
+	path = ws/src/fcu_common
+	url = https://github.com/BYU-MAGICC/fcu_common.git
