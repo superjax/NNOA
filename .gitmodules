@@ -4,3 +4,6 @@
 [submodule "ws/src/fcu_common"]
 	path = ws/src/fcu_common
 	url = https://github.com/BYU-MAGICC/fcu_common.git
+[submodule "ws/src/ros_copter"]
+	path = ws/src/ros_copter
+	url = https://github.com/byu-magicc/ros_copter.git
