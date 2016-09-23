@@ -6,5 +6,6 @@
 *.bbl
 *.blg
 *.sh
+.idea/*
 ws/build/*
 ws/devel/*
