@@ -9,3 +9,4 @@
 .idea/*
 ws/build/*
 ws/devel/*
+*.pyc
