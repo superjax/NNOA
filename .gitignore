@@ -10,3 +10,4 @@
 ws/build/*
 ws/devel/*
 *.pyc
+*.user*
