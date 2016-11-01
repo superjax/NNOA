@@ -7,3 +7,6 @@
 [submodule "ws/src/ros_copter"]
 	path = ws/src/ros_copter
 	url = https://github.com/byu-magicc/ros_copter.git
+[submodule "ws/src/reactive_planner"]
+	path = ws/src/reactive_planner
+	url = https://github.com/superjax/reactive_planner.git
