@@ -12,3 +12,4 @@ ws/devel/*
 *.pyc
 *.user*
 *.nfs*
+*.gif
