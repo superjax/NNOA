@@ -13,3 +13,7 @@ ws/devel/*
 *.user*
 *.nfs*
 *.gif
+*.tflogs
+*.vscode
+*.tfcheckpoints
+*.ipynb_checkpoints
