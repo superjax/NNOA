@@ -1,0 +1,12 @@
+[submodule "construct/src/fcu_sim"]
+	path = construct/src/fcu_sim
+	url = https://github.com/BYU-MAGICC/fcu_sim.git
+[submodule "construct/src/fcu_common"]
+	path = construct/src/fcu_common
+	url = https://github.com/BYU-MAGICC/fcu_common.git
+[submodule "construct/src/ros_copter"]
+	path = construct/src/ros_copter
+	url = https://github.com/byu-magicc/ros_copter.git
+[submodule "construct/src/reactive_planner"]
+	path = construct/src/reactive_planner
+	url = https://github.com/superjax/reactive_planner.git
