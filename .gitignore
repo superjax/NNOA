@@ -7,8 +7,8 @@
 *.blg
 *.sh
 .idea/*
-ws/build/*
-ws/devel/*
+construct/build/*
+construct/devel/*
 *.pyc
 *.user*
 *.nfs*
