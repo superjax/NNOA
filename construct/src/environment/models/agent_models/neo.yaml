@@ -1,0 +1,39 @@
+u_P: 0.8
+u_I: 0.0
+u_D: 0.3
+
+v_P: 0.8
+v_I: 0.0
+v_D: 0.3
+
+w_P: 0.8
+w_I: 0.0
+w_D: 0.7
+
+x_P: 0.8
+x_I: 0.0
+x_D: 0.4
+
+y_P: 0.8
+y_I: 0.0
+y_D: 0.4
+
+z_P: 1.0
+z_I: 0.1
+z_D: 0.5
+
+psi_P: 1.0
+psi_I: 0.0
+psi_D: 0.0
+
+tau: 0.15
+
+equilibrium_thrust: 0.68
+
+max_roll: 0.21866
+max_pitch: 0.21866
+max_yaw_rate: 3.14159
+max_throttle: 1.0
+max_u: 6.0
+max_v: 6.0
+max_w: 4.5
