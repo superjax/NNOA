@@ -1,0 +1,70 @@
+<launch>
+
+  <arg name="mav_name"            default="neo"/>
+  <arg name="enable_ground_truth" default="true" />
+  <arg name="log_file"            default="$(arg mav_name)" />
+  <arg name="color"               default="Red"/>
+  <arg name="x"                   default="0"/>
+  <arg name="y"                   default="0"/>
+  <arg name="z"                   default="10"/>
+  <arg name="yaw"                 default="0"/>
+  <arg name="render"              default="true"/>
+  <arg name="verbose"             default="true"/>
+  <arg name="ns"                  default="/mylaunch"/>
+  <arg name="gzserver_port"       default="11345"/>
+
+  <arg name="world_file" default="$(find environment)/worlds/basic.world"/>
+
+  <env name="GAZEBO_MASTER_URI" value="http://localhost:$(arg gzserver_port)" />
+
+  <group ns="$(arg ns)">
+
+    <!-- Start Simulator -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="verbose" value="$(arg verbose)"/>
+      <arg name="world_name" value="$(arg world_file)"/>
+      <arg name="paused" value="true"/>
+      <arg name="gui" value="$(arg render)"/>
+    </include>
+
+    <!-- Spawn in Gazebo -->
+    <include file="$(find fcu_sim)/launch/spawn_mav.launch">
+      <arg name="mav_name"            value="$(arg mav_name)" />
+      <arg name="model"               value="$(find environment)/models/agent_models/$(arg mav_name).xacro" />
+      <arg name="enable_ground_truth" value="true" />
+      <arg name="x"                   value="$(arg x)"/>
+      <arg name="y"                   value="$(arg y)"/>
+      <arg name="z"                   value="$(arg z)"/>
+      <arg name="yaw"                 value="$(arg yaw)"/>
+      <arg name="color"               value="$(arg color)"/>
+      <arg name="gazebo_namespace"    value="$(arg ns)"/>
+      <arg name="robot_namespace"     value="$(arg ns)/$(arg mav_name)"/>
+    </include>
+
+    <group ns="$(arg mav_name)">
+
+      <!-- Position Controller -->
+      <rosparam command="load" file="$(find environment)/models/agent_models/neo.yaml" ns="controller"/>
+      <node name="controller" pkg="ros_copter" type="controller" output="screen">
+        <remap from="estimate" to="ground_truth/odometry"/>
+      </node>
+
+      <!-- Is Flying Publisher -->
+      <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true"/>
+
+      <!-- Reactive Planner -->
+      <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
+        <remap from="state" to="$(arg ns)/$(arg mav_name)/ground_truth/odometry"/>
+      </node>
+
+      <!-- FPV
+      <node name="fpv" pkg="image_view" type="image_view">
+        <remap from="image" to="camera/rgb"/>
+      </node>
+       -->
+
+
+    </group>
+  </group>
+
+</launch>
