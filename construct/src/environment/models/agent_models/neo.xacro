@@ -11,10 +11,10 @@ Author: James Jackson
 <!-- Properties -->
 <xacro:property name="namespace" value="$(arg robot_namespace)" />
 <xacro:property name="use_mesh_file" value="true" />
-<xacro:property name="mesh_file" value="package://fcu_sim/meshes/Millennium_Falcon.dae" />
-<xacro:property name="mass" value="3.81" /> <!-- [kg] -->
-<xacro:property name="body_width" value="0.505" /> <!-- [m] -->
-<xacro:property name="body_height" value="0.1" /> <!-- [m] -->
+<xacro:property name="mesh_file" value="package://fcu_sim/meshes/firefly.dae" />
+<xacro:property name="mass" value="0.540" />
+<xacro:property name="body_width" value="0.3" />
+<xacro:property name="body_height" value="0.05" />
 <xacro:property name="rolling_moment_coefficient" value="0.000001" />
 <xacro:property name="body_inertia">
   <inertia ixx="0.0347563" ixy="0.0" ixz="0.0" iyy="0.0458929" iyz="0.0" izz="0.0977" />
@@ -24,7 +24,7 @@ Author: James Jackson
 <!-- *********************** GAZEBO ROBOT DEFINITION ******************* -->
 <link name="${namespace}/base_link">
   <inertial>
-    <mass value="${mass}" />  <!-- [kg] -->
+    <mass value="${mass}" /> 
     <origin xyz="0 0 0" />
     <xacro:insert_block name="body_inertia" />
   </inertial>
@@ -33,8 +33,7 @@ Author: James Jackson
     <origin xyz="0 0 0" rpy="0 0 0" />
     <geometry>
       <xacro:if value="${use_mesh_file}">
-        <mesh filename="${mesh_file}" scale="0.001 0.001 0.001" />
-        <!-- <mesh filename="${mesh_file}" scale="1 1 1" /> -->
+        <mesh filename="${mesh_file}" scale="1 1 1" />
       </xacro:if>
       <xacro:unless value="${use_mesh_file}">
         <cylinder length="${body_height}" radius="${body_width}"/>
@@ -60,7 +59,7 @@ Author: James Jackson
 
   <!-- Simplified Dynamics -->
   <xacro:include filename="$(find fcu_sim_plugins)/xacro/multirotor_forces_and_moments.xacro"/>
-  <xacro:mikey_forces_and_moments namespace="${namespace}" parent_link="${namespace}/base_link" command_topic="command"/>
+  <xacro:multirotor namespace="${namespace}" parent_link="${namespace}/base_link" command_topic="command"/>
 
 
   <!-- ***************** SENSORS ******************* -->
@@ -80,11 +79,10 @@ Author: James Jackson
     height="240"
     image_camera_info_topic="camera_info">
     <origin xyz="0.127 0 -0.0889"/>
-    <!--<origin xyz="1 1 1"/>-->
   </xacro:step_camera>
 
   <!-- Laser Scanner -->
-  <xacro:include filename="$(find fcu_sim_plugins)/xacro/velodyne.xacro"/>
+<!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/velodyne.xacro"/>
   <xacro:velodyne_custom
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
@@ -92,29 +90,29 @@ Author: James Jackson
     visualize="false">
     <origin xyz="${body_width+0.1} 0 0" rpy="0 0 0"/>
   </xacro:velodyne_custom>
-
+ -->
   <!-- GPS -->
-  <xacro:include filename="$(find fcu_sim_plugins)/xacro/GPS.xacro"/>
+<!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/GPS.xacro"/>
   <xacro:GPS_BYU
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
     GPS_topic="gps"/>
-
+ -->
   <!-- Mount an IMU -->
-  <xacro:include filename="$(find fcu_sim_plugins)/xacro/imu.xacro"/>
+<!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/imu.xacro"/>
   <xacro:IMU_ADIS16448
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
     imu_topic="imu"/>
-
+ -->
   <!-- Contact Sensor -->
-  <gazebo reference="${namespace}/base_link">
+<!--   <gazebo reference="${namespace}/base_link">
     <sensor name="contact_sensor" type="contact">
       <always_on>true</always_on>
       <update_rate>1000</update_rate>
       <contact>
-        <!-- When using ROS Indigo and Gazebo 2.2.3, the name specified here
-             must be <link name>_collision. -->
+        When using ROS Indigo and Gazebo 2.2.3, the name specified here
+             must be <link name>_collision.
         <collision>${namespace}/base_link_collision</collision>
       </contact>
       <plugin name="fixed_jaw_bumper" filename="libgazebo_ros_bumper.so">
@@ -123,6 +121,6 @@ Author: James Jackson
       </plugin>
     </sensor>
   </gazebo>
-
+ -->
 
 </robot>
