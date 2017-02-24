@@ -1,16 +1,13 @@
 <?xml version="1.0"?>
 <!--
-
 Gazebo Shredder Definition File
 Author: James Jackson
-
 -->
 
 <robot name="neo" xmlns:xacro="http://ros.org/wiki/xacro">
 
-
 <!-- Properties -->
-<xacro:property name="namespace" value="neo" />
+<xacro:property name="namespace" value="$(arg robot_namespace)" />
 <xacro:property name="use_mesh_file" value="true" />
 <xacro:property name="mesh_file" value="package://fcu_sim/meshes/firefly.dae" />
 <xacro:property name="mass" value="0.540" />
@@ -25,7 +22,7 @@ Author: James Jackson
 <!-- *********************** GAZEBO ROBOT DEFINITION ******************* -->
 <link name="${namespace}/base_link">
   <inertial>
-    <mass value="${mass}" /> 
+    <mass value="${mass}" />
     <origin xyz="0 0 0" />
     <xacro:insert_block name="body_inertia" />
   </inertial>
@@ -38,24 +35,30 @@ Author: James Jackson
       </xacro:if>
       <xacro:unless value="${use_mesh_file}">
         <cylinder length="${body_height}" radius="${body_width}"/>
-      </geometry>
-    </collision>
-  </link>
+      </xacro:unless>
+    </geometry>
+  </visual>
+
+  <collision name="collision_mav">
+    <origin xyz="0 0 ${body_height/2.0}" rpy="0 0 0" />
+    <geometry>
+      <cylinder length="${0.1}" radius="${body_width}"/>
+    </geometry>
+  </collision>
+
+</link>
+
 
   <gazebo reference="${namespace}/base_link">
     <material>Gazebo/$(arg color)</material>
   </gazebo>
 
-
   <!-- ************************* ROTOR DYNAMICS ********************** -->
-
-  <!-- ROSflight_SIL
-  <xacro:include filename="$(find fcu_sim_plugins)/xacro/ROSflight_SIL.xacro"/>
-  <xacro:mikey_ROSflight_SIL namespace="${namespace}" parent_link="${namespace}/base_link" command_topic="command"/> -->
 
   <!-- Simplified Dynamics -->
   <xacro:include filename="$(find fcu_sim_plugins)/xacro/multirotor_forces_and_moments.xacro"/>
   <xacro:multirotor namespace="${namespace}" parent_link="${namespace}/base_link" command_topic="command"/>
+
 
   <!-- ***************** SENSORS ******************* -->
   <!-- Ground Truth -->
@@ -86,6 +89,7 @@ Author: James Jackson
     <origin xyz="${body_width+0.1} 0 0" rpy="0 0 0"/>
   </xacro:velodyne_custom>
  -->
+
   <!-- GPS -->
 <!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/GPS.xacro"/>
   <xacro:GPS_BYU
@@ -93,14 +97,15 @@ Author: James Jackson
     parent_link="${namespace}/base_link"
     GPS_topic="gps"/>
  -->
+
   <!-- Mount an IMU -->
-<!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/imu.xacro"/>
+  <xacro:include filename="$(find fcu_sim_plugins)/xacro/imu.xacro"/>
   <xacro:IMU_ADIS16448
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
     imu_topic="imu"/>
- -->
-  <!-- Contact Sensor 
+
+  <!-- Contact Sensor -->
   <gazebo reference="${namespace}/base_link">
     <sensor name="contact_sensor" type="contact">
       <always_on>true</always_on>
@@ -113,6 +118,6 @@ Author: James Jackson
         <frameName>contact</frameName>
       </plugin>
     </sensor>
-  </gazebo>-->
+  </gazebo>
 
 </robot>
