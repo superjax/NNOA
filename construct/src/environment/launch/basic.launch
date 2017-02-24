@@ -46,7 +46,7 @@
       <rosparam command="load" file="$(find environment)/models/agent_models/$(arg mav_name).yaml"/>
 
       <!-- JoySticks -->
-      <!-- <node pkg="joy" type="joy_node" name="joy">
+<!--       <node pkg="joy" type="joy_node" name="joy">
         <param name="autorepeat_rate" value="50"/>
         <param name="coalesce_interval" value="0.02"/>
       </node>
@@ -66,8 +66,8 @@
       <!-- Is Flying Publisher -->
       <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true"/>
 
-      <!-- Waypoint Manager
-      <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
+      <!-- Waypoint Manager -->
+<!--       <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
         <rosparam command="load" file="$(find ros_copter)/params/waypoints.yaml"/>
         <remap from="waypoint" to="high_level_command"/>
         <remap from="state" to="ground_truth/odometry"/>
@@ -79,9 +79,9 @@
       </node> -->
 
       <!-- FPV -->
-      <node name="fpv" pkg="image_view" type="image_view">
+      <!-- <node name="fpv" pkg="image_view" type="image_view">
         <remap from="image" to="camera/rgb"/>
-      </node>
+      </node> -->
 
 
 
