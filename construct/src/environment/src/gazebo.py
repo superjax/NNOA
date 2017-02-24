@@ -62,7 +62,7 @@ class World:
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
                      'world_file:=' + str(self.world_file),
-                     'yaw:=' + str(45),
+                     'yaw:=' + str(np.pi / 2.0),
                      'render:=' + str(False),
                      'mav_name:=' + self.agent,
                      'verbose:=' + str(self.verbose),
@@ -70,26 +70,10 @@ class World:
                      'gzserver_port:=' + str(int(self.port))
                      ]
 
-        self.randomize_obstacles_op = rospy.ServiceProxy(self.namespace + '/gazebo/randomize_obstacles', Empty, persistent=False)
+        self.reset = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
+        self.randomize_obstacles = rospy.ServiceProxy(self.namespace + '/gazebo/randomize_obstacles', Empty, persistent=False)
         self.process = _popen(["roslaunch", '--screen'] + arguments, self.verbose, sleeptime=3)
-        self.wait()
-
-        if pause_process:
-            self.pause()
-
-    def wait(self):
-        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
-        self.reset_op.wait_for_service(10)
-
-    def pause(self):
-        _popen(['pkill', '-f', '-SIGSTOP', self.namespace[1:]], verbose=True, sleeptime=1)
-
-    def resume(self):
-        _popen(['pkill', '-f', '-SIGCONT', self.namespace[1:]], verbose=True, sleeptime=0.01)
-
-    def reset(self):
-        self.randomize_obstacles_op()
-        self.reset_op()
+        self.reset.wait_for_service(10)
 
     def end(self):
         if self.process:
@@ -133,140 +117,20 @@ class GazeboEnvironment:
 
     class SingleWorldManager:
         def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ"):
-            self.agent_type = agent_type
-            self.supernamespace = supernamespace
-            self.verbose = verbose
-            self.roscore = None
-            self.world = None
-
-        def end(self, world):
-            pass
-
-        def kill(self):
-            self._on_end(self.world, self.roscore)
-
-        def _on_end(self, world, roscore):
-            world.end()
-            rospy.signal_shutdown('')
-            roscore.terminate()
-            roscore.wait()
-
-        def start(self):
-            self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=3)
+            self.roscore = _popen(['rosmaster', '--core'], verbose, sleeptime=3)
             rospy.set_param('/use_sim_time', True)
             rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
 
-            self.world = World(self.agent_type, 11345, self.verbose, self.supernamespace)
+            self.world = World(agent_type, 11345, verbose, supernamespace)
             self.world.run(pause_process=False)
-            self.world.wait()
 
-            atexit.register(self._on_end, self.world, self.roscore)
+            atexit.register(self.kill)
 
-        def connect(self):
-            self.world.reset()
-            return self.world
-
-    # class WorldManager:
-    #     def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ"):
-    #         self.is_running = Value('b', True)
-    #         self.worlds = Queue(10)
-    #         self.total_worlds = Value('d', 0)
-    #         self.verbose = verbose
-    #         self.agent_type = agent_type
-    #         self.current_world = None
-    #         self.deck_world = None
-    #         self.threads = threads
-    #         self.supernamespace = supernamespace
-
-    #         self.roscore = None
-
-    #     def kill(self):
-    #         self.is_running.value = False
-
-    #     def start(self):
-    #         self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=1)
-    #         rospy.set_param('/use_sim_time', True)
-    #         rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
-
-    #         creation_threads = []
-    #         for _ in range(self.threads):
-    #             p = Process(target=self._world_thread,
-    #                         args=[self.worlds, self.is_running, self.agent_type, self.total_worlds, self.verbose, self.supernamespace])
-    #             p.daemon = True
-    #             p.start()
-    #             creation_threads.append(p)
-
-    #         atexit.register(self._on_end, self.worlds, self.is_running, self.roscore, creation_threads)
-
-    #         # Wait for worlds
-    #         self.current_world = self.worlds.get(block=True)
-    #         self.current_world.resume()
-
-    #     def connect(self):
-    #         while self.is_running.value:
-    #             try:
-    #                 current = self.current_world
-    #                 self.deck_world = self.worlds.get(timeout=1)
-    #                 self.deck_world.resume()
-    #                 self.current_world = self.deck_world
-
-    #                 current.wait()
-    #                 return current
-    #             except (QueueEmpty, rospy.exceptions.ROSException) as e:
-    #                 pass
-
-    #     @staticmethod
-    #     def _world_thread(worlds, is_running, agent, total_worlds, verbose, supernamespace):
-    #         miniworld = None
-    #         while is_running.value:
-    #             total_worlds.value += 1
-    #             port_delta = random.randrange(100, 1000) + total_worlds.value
-    #             miniworld = World(agent, 11345 + port_delta, verbose, supernamespace)
-
-    #             try:
-    #                 if is_running.value:
-    #                     miniworld.run()
-
-    #                 while is_running.value:
-    #                     try:
-    #                         worlds.put(miniworld, timeout=1)
-    #                         break
-    #                     except QueueFull as e:
-    #                         pass
-
-    #             except KeyboardInterrupt:
-    #                 is_running.value = False
-
-    #             except rospy.ROSException as e:
-    #                 pass
-
-    #         # Worlds, created, but not in the queue that won't be cleaned up by _on_end
-    #         if miniworld is not None:
-    #             miniworld.end()
-
-    #     def _on_end(self, worlds, is_running, roscore, creation_threads):
-    #         with is_running.get_lock():
-    #             is_running.value = False
-
-    #         if self.current_world is not None:
-    #             self.current_world.end()
-
-    #         if self.deck_world is not None:
-    #             self.deck_world.end()
-
-    #         while not worlds.empty():
-    #             world = worlds.get()
-    #             world.end()
-    #         worlds.close()
-    #         worlds.join_thread()
-
-    #         for p in creation_threads:
-    #             p.terminate()
-    #             p.join()
-
-    #         rospy.signal_shutdown('')
-    #         roscore.terminate()
-    #         roscore.wait()
+        def kill(self):
+            self.world.end()
+            rospy.signal_shutdown('')
+            self.roscore.terminate()
+            self.roscore.wait()
 
     def __init__(self, verbose=False):
         self.image_bridge = CvBridge()
@@ -285,49 +149,37 @@ class GazeboEnvironment:
         self.odometry = None
         self.goal_radius = 2
 
+        self.last_frame = 0
+
         self.agent_name = 'neo'
 
-        # TODO: get bounds from James
-        self._action_space = spaces.Box(low=-100, high=100, shape=(4,))
+        bounds = np.array([2*np.pi, 2*np.pi, 10, 1])
+        self.action_space = spaces.Box(low=-bounds, high=bounds)
         self.resolution = World._get_resolution(self.agent_name)
-        self._observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
+        self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
                                                 spaces.Box(low=0, high=255, shape=(self.resolution[0], self.resolution[1], 1))])
 
-
         self.world_manager = GazeboEnvironment.SingleWorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=5)
-        self.world_manager.start()
+        ns = self.world_manager.world.namespace
 
-        self.last_stamp = 0
+        self.listeners = [
+            rospy.Subscriber(ns + '/' + self.agent_name + '/camera/rgb', Image, self._on_cameraframe, queue_size=1),
+            rospy.Subscriber(ns + '/' + self.agent_name + '/ground_truth/odometry', Odometry, self._on_odometry, queue_size=1),
+            rospy.Subscriber(ns + '/' + self.agent_name + '/contact', ContactsState, self._on_contact, queue_size=1),
+            rospy.Subscriber(ns + '/' + self.agent_name + '/high_level_command', Command, self._on_command, queue_size=1)
+        ]
+
+        self.unpause_sim_op = rospy.ServiceProxy(ns + '/gazebo/unpause_physics', Empty)
+        self.step_op = rospy.Publisher(ns + '/gazebo/step', Int16, queue_size=5)
+        self.waypoint_op = rospy.Publisher(ns + '/' + self.agent_name + '/waypoint', Command, queue_size=5, latch=True)
+        self.command_op = rospy.Publisher(ns + '/' + self.agent_name + '/high_level_command', Command, queue_size=5, latch=True)
 
         self.reset()
 
-    def _connect(self):
-        if self.current_world is not None:
-            self.world_manager.end(self.current_world)
-            [l.unregister() for l in self.listeners]
-
-        self.current_world = self.world_manager.connect()
-
-        if self.current_world is not None:
-            ns = self.current_world.namespace
-
-            self.listeners = [
-                rospy.Subscriber(ns + '/' + self.agent_name + '/camera/rgb', Image, self._on_cameraframe, queue_size=1),
-                rospy.Subscriber(ns + '/' + self.agent_name + '/ground_truth/odometry', Odometry, self._on_odometry, queue_size=1),
-                rospy.Subscriber(ns + '/' + self.agent_name + '/contact', ContactsState, self._on_contact, queue_size=1),
-                rospy.Subscriber(ns + '/' + self.agent_name + '/high_level_command', Command, self._on_command, queue_size=1)
-            ]
-
-            self.unpause_sim_op = rospy.ServiceProxy(ns + '/gazebo/unpause_physics', Empty)
-            self.step_op = rospy.Publisher(ns + '/gazebo/step', Int16, queue_size=5)
-            self.waypoint_op = rospy.Publisher(ns + '/' + self.agent_name + '/waypoint', Command, queue_size=5, latch=True)
-            self.command_op = rospy.Publisher(ns + '/' + self.agent_name + '/high_level_command', Command, queue_size=5, latch=True)
-
-            return True
-
-        return False
-
     def _on_cameraframe(self, message):
+        if self.last_frame != 0:
+            print (self.last_frame - message.header.stamp).to_sec()
+        self.last_frame = message.header.stamp
         self.state = {'camera': np.asarray(self.image_bridge.imgmsg_to_cv2(message, "mono8")),
                       'odometry': self.odometry}
 
@@ -349,29 +201,26 @@ class GazeboEnvironment:
     def _send_command(self, data):
         cmd = Command()
         cmd.mode = Command.MODE_XVEL_YVEL_YAWRATE_ALTITUDE
-        cmd.x = data[0]
-        cmd.y = data[1]
-        cmd.z = data[2]
-        cmd.F = data[3]
+        cmd.x, cmd.y, cmd.z, cmd.F = data
         self.command_op.publish(cmd)
 
     def _set_waypoint(self, position):
         cmd = Command()
         cmd.x, cmd.y, cmd.z, cmd.F = position[0], position[1], 0, position[2]
-        cmd.mode = Command.MODE_XPOS_YPOS_YAW_ALTITUDE  # MODE_ROLL_PITCH_YAWRATE_THROTTLE
+        cmd.mode = Command.MODE_XPOS_YPOS_YAW_ALTITUDE 
         self.waypoint_op.publish(cmd)
 
     @staticmethod
     def _is_deadly_collision(collision):
         normal = np.abs(np.array([collision.contact_normals[0].x, collision.contact_normals[0].y, collision.contact_normals[0].z]))
         force = np.abs(np.array([collision.total_wrench.force.x, collision.total_wrench.force.y, collision.total_wrench.force.z]))
-        return (normal * force).dot(np.array([1, 1, 1])) > 1
+        return (normal * force).sum() > 1
 
     def _reward_(self, before, after):
         if before['odometry'] and after['odometry']:
             then = np.array([before['odometry'].pose.pose.position.x, before['odometry'].pose.pose.position.y, before['odometry'].pose.pose.position.z])
             now = np.array([after['odometry'].pose.pose.position.x, after['odometry'].pose.pose.position.y, after['odometry'].pose.pose.position.z])
-            return euclidean(then, self.current_world.goal) - euclidean(now, self.current_world.goal)
+            return euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal)
         return 0
 
     def _terminal_status(self):
@@ -386,7 +235,7 @@ class GazeboEnvironment:
             if self.frame > self.max_frames:
                 status = self.Status.timeout
 
-            if euclidean(position, self.current_world.goal) < self.goal_radius:
+            if euclidean(position, self.world_manager.world.goal) < self.goal_radius:
                 status = self.Status.success
 
         return status
@@ -405,10 +254,11 @@ class GazeboEnvironment:
     @timeout_decorator.timeout(1.0)
     def _step(self):
         last = self.frame
-        self.step_op.publish(self.current_world.step_size)
+        self.step_op.publish(self.world_manager.world.step_size)
 
         # Infinite loop, timeout_decorator handles timeout
         # I couldn't get acquire's timeout argument to work when sending SIGINT with ctrl+c
+        # self.frame_lock.acquire(block=True, timeout=0.80)
         while last == self.frame:
             pass
 
@@ -433,33 +283,25 @@ class GazeboEnvironment:
     def render(self):
         pass
 
-    @property
-    def action_space(self):
-        return self._action_space
-
-    @property
-    def observation_space(self):
-        return self._observation_space
-
     def reset(self):
         for attempt in range(3):
             try:
-                if self._connect():
-                    self.unpause_sim_op()
-                    self.flying_status = self.Status.flying
-                    self.state = None
-                    self.odometry = None
-                    self._set_waypoint(self.current_world.goal)
-                    self.frame = 0
-                    self.last_command = None
+                self.world_manager.world.randomize_obstacles()
+                self.world_manager.world.reset()
+                self.unpause_sim_op()
+                self.flying_status = self.Status.flying
+                self.state = None
+                self.odometry = None
+                self.frame = 0
+                self.last_command = None
 
-                    while self.frame == 0 and self.state is None:
-                        self._step()
+                while self.frame == 0 and self.state is None:
+                    self._step()
 
-                    if self._terminal():
-                        self.reset()
+                if self._terminal():
+                    self.reset()
 
-                    return self._state_to_observation(self.state)
+                return self._state_to_observation(self.state)
             except timeout_decorator.TimeoutError:
                 print 'Timeout Error'
                 pass
