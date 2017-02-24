@@ -1,4 +1,4 @@
-<model name='unit_cylinder_5'>
+<model name='obstacle_unit_cylinder_5'>
   <pose>-1 -22 0.5 0 -0 0</pose>
   <link name='link'>
     <inertial>

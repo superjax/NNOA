@@ -5,10 +5,11 @@ from tqdm import tqdm
 cv2.startWindowThread()
 cv2.namedWindow("preview", cv2.CV_WINDOW_AUTOSIZE)
 
-g = GazeboEnvironment()
+g = GazeboEnvironment(verbose=True)
 
-for e in tqdm(range(1000)):
-    for i in tqdm(range(1000)):
+for e in tqdm(range(10000)):
+    g.reset()
+    for i in tqdm(range(250)):
         action = g.action_space.sample()
         state, reward, terminal, _ = g.step(action)
         cv2.imshow("preview", state[1])

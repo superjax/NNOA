@@ -23,14 +23,14 @@
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="verbose" value="$(arg verbose)"/>
       <arg name="world_name" value="$(arg world_file)"/>
-      <arg name="paused" value="true"/>
+      <arg name="paused" value="false"/>
       <arg name="gui" value="$(arg render)"/>
     </include>
 
     <!-- Spawn in Gazebo -->
     <include file="$(find fcu_sim)/launch/spawn_mav.launch">
       <arg name="mav_name"            value="$(arg mav_name)" />
-      <arg name="model"               value="$(find environment)/models/agent_models/$(arg mav_name).xacro" />
+      <arg name="model"               value="$(find environment)/models/agent_models/neo.xacro" />
       <arg name="enable_ground_truth" value="true" />
       <arg name="x"                   value="$(arg x)"/>
       <arg name="y"                   value="$(arg y)"/>
@@ -47,10 +47,10 @@
       <rosparam command="load" file="$(find environment)/models/agent_models/neo.yaml" ns="controller"/>
       <node name="controller" pkg="ros_copter" type="controller" output="screen">
         <remap from="estimate" to="ground_truth/odometry"/>
-      </node>
+      </node>pytho
 
       <!-- Is Flying Publisher -->
-      <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true"/>
+      <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true" output="screen"/>
 
       <!-- Reactive Planner -->
       <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
