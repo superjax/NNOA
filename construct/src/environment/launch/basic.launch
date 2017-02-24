@@ -43,8 +43,22 @@
 
     <group ns="$(arg mav_name)">
 
+      <rosparam command="load" file="$(find environment)/models/agent_models/$(arg mav_name).yaml"/>
+
+      <!-- JoySticks -->
+      <!-- <node pkg="joy" type="joy_node" name="joy">
+        <param name="autorepeat_rate" value="50"/>
+        <param name="coalesce_interval" value="0.02"/>
+      </node>
+      <node pkg="fcu_common" type="joy" name="xbox" output="screen">
+        <rosparam command="load" file="$(find fcu_common)/param/xbox.yaml"/>
+        <param name="gazebo_namespace" value="$(arg ns)"/>
+        <param name="control_mode" value="5"/>
+        <remap from="command" to="high_level_command"/>
+      </node> -->
+      
       <!-- Position Controller -->
-      <rosparam command="load" file="$(find environment)/models/agent_models/neo.yaml" ns="controller"/>
+      <rosparam command="load" file="$(find environment)/models/agent_models/neo_controller.yaml" ns="controller"/>
       <node name="controller" pkg="ros_copter" type="controller" output="screen">
         <remap from="estimate" to="ground_truth/odometry"/>
       </node>pytho
@@ -52,16 +66,23 @@
       <!-- Is Flying Publisher -->
       <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true" output="screen"/>
 
-      <!-- Reactive Planner -->
-      <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
-        <remap from="state" to="$(arg ns)/$(arg mav_name)/ground_truth/odometry"/>
+      <!-- Waypoint Manager -->
+      <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
+        <rosparam command="load" file="$(find ros_copter)/params/waypoints.yaml"/>
+        <remap from="waypoint" to="high_level_command"/>
+        <remap from="state" to="ground_truth/odometry"/>
       </node>
 
-      <!-- FPV
+      <!-- Reactive Planner -->
+<!--       <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
+        <remap from="state" to="$(arg ns)/$(arg mav_name)/ground_truth/odometry"/>
+      </node> -->
+
+      <!-- FPV -->
       <node name="fpv" pkg="image_view" type="image_view">
         <remap from="image" to="camera/rgb"/>
       </node>
-       -->
+      
 
 
     </group>
