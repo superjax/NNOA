@@ -79,9 +79,9 @@
       </node> -->
 
       <!-- FPV -->
-      <!-- <node name="fpv" pkg="image_view" type="image_view">
+      <node name="fpv" pkg="image_view" type="image_view">
         <remap from="image" to="camera/rgb"/>
-      </node> -->
+      </node> 
 
 
 
