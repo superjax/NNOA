@@ -340,6 +340,7 @@ class GazeboEnvironment:
 
     def _on_contact(self, message):
         for collision in message.states:
+            print "collided!"
             if self._is_deadly_collision(collision):
                 self.frame_lock.release()
                 self.flying_status = self.Status.crashed
