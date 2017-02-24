@@ -56,7 +56,8 @@ def generate_world(num_objects):
     attempts_per_object = 100
 
     goal_height = np.random.uniform(5, 20)
-    objects = np.zeros([num_objects, 5])
+    objects = np.zeros([2 + num_objects, 5])
+
     objects[0] = np.array([width / 2, 0, goal_height, 5, 0])  # Start
     objects[1] = np.array([width / 2, height, goal_height, 2, 1])  # End
 
@@ -75,8 +76,8 @@ def generate_world(num_objects):
         sdf.parse(os.path.dirname(os.path.abspath(__file__)) + "/../worlds/" + base_file)
         world = sdf.find('world')
 
-        new_tree_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../object_models/tree.sdf").getroot()
-        new_goal_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../object_models/goal.sdf").getroot()
+        new_tree_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../models/object_models/tree.sdf").getroot()
+        new_goal_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../models/object_models/goal.sdf").getroot()
 
         for i, (x, y, z, r, type) in enumerate(objects):
             # if type == 1:
@@ -86,9 +87,10 @@ def generate_world(num_objects):
 
             if type == 2:
                 obj = new_tree_model()
+
                 obj.find('link/collision/geometry/cylinder/radius').text = str(r / spread_factor)
                 obj.find('link/collision/geometry/cylinder/length').text = str(h)
-                obj.set('name', "object_" + str(i) + "_type_" + str(type))
+                obj.set('name', "obstacle_" + str(i) + "_type_" + str(type))
                 obj.find('pose').text = str(x) + " " + str(y) + " " + str(h / 2) + " 0 0 0"
                 obj.find('link/visual/geometry/cylinder/radius').text = str(r / spread_factor)
                 obj.find('link/visual/geometry/cylinder/length').text = str(h)

@@ -3,7 +3,7 @@ import os
 import rospy
 import atexit
 from std_srvs.srv import Empty
-from std_msgs.msg import Bool, Int16
+from std_msgs.msg import Bool, Int16, String
 from nav_msgs.msg import Odometry
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
@@ -24,6 +24,7 @@ from Queue import Empty as QueueEmpty, Full as QueueFull
 import os
 import random
 from gym import spaces
+import signal
 
 def _popen(command, verbose=True, sleeptime=1):
     process = subprocess.Popen(command,
@@ -43,27 +44,27 @@ class World:
         self.port = port
         self.process = None
 
-        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=2)
+        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
 
-        # Something strange that's required
+        # There is an annoying flip that happens for the goal altitude
         self.goal[1] *= -1
         self.goal[2] *= -1
 
         self.namespace = '/' + str(supernamespace) + str(uuid.uuid4().get_hex().upper())
 
         max_step_size = self._get_step_size(self.world_file)
-        update_rate = self._get_update_rate(self.path + '/../models/agent_models/' + agent + '.xacro')
+        update_rate = self._get_update_rate(agent)
         self.step_size = (1.0 / update_rate) / max_step_size * 2 - 1
 
         assert math.floor((1.0 / update_rate) / max_step_size) == (1.0 / update_rate) / max_step_size
 
-    def run(self):
+    def run(self, pause_process=True):
         arguments = [os.path.abspath(self.path + "/../launch/basic.launch"),
                      'x:=' + str(self.start[0]),
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
+                     'world_file:=' + str(self.world_file),
                      'yaw:=' + str(90),
-                     'world_file:=' + self.world_file,
                      'render:=' + str(False),
                      'mav_name:=' + self.agent,
                      'verbose:=' + str(self.verbose),
@@ -71,15 +72,40 @@ class World:
                      'gzserver_port:=' + str(int(self.port))
                      ]
 
-        self.process = _popen(["roslaunch"] + arguments, self.verbose, sleeptime=5)
-        rospy.wait_for_service(self.namespace + '/gazebo/reset_simulation', timeout=5)
+        self.process = _popen(["roslaunch", '--screen'] + arguments, self.verbose, sleeptime=3)
+        self.wait()
+
+        self.load_op = rospy.Publisher(self.namespace + '/gazebo/load_models', String, queue_size=1)
+
+        if pause_process:
+            self.pause()
+
+    def load_models(self, filename):
+        self.load_op.publish(filename)
+
+    def wait(self):
+        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
+        self.reset_op.wait_for_service(10)
+
+    def pause(self):
+        _popen(['pkill', '-f', '-SIGSTOP', self.namespace[1:]], verbose=True, sleeptime=1)
+
+    def resume(self):
+        _popen(['pkill', '-f', '-SIGCONT', self.namespace[1:]], verbose=True, sleeptime=0.01)
+
+    def reset(self):
+        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
+        self.reset_op()
+        
+        self.load_models(self.world_file)
+
 
     def end(self):
         if self.process:
             # Hacky, but required.
             # You may think I should have used .terminate() or .kill() on self.process, but you would be wrong
             # roslaunch needs to catch the signal to pass it to it's spawned processes, so .kill() is off the table
-            # and gzserver doesn't always catch the signal passed from roslaunch when using .terminate(), resulting
+            # and gzserver doesn't catch the signal passed from roslaunch when using .terminate(), resulting
             # in processes that continue to run, and result in linearly increasing cpu/mem consumption and then hang
             # on world_creation_thread.wait() when the main program terminates since the creation threads can't terminate
             # UPDATE: I thought I could remove this, but I was wrong.
@@ -92,7 +118,15 @@ class World:
         return float(t.text) if t is not None else 0.01
 
     @staticmethod
-    def _get_update_rate(xacro_filename):
+    def _get_resolution(agent):
+        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
+        t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
+        assert t is not None, 'step_camera not found in ' + xacro_filename
+        return (int(t.attrib['width']), int(t.attrib['height'])) if t is not None else (320, 250)
+
+    @staticmethod
+    def _get_update_rate(agent):
+        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
         assert t is not None, 'step_camera not found in ' + xacro_filename
         return int(t.attrib['frame_rate']) if t is not None else 25
@@ -106,14 +140,42 @@ class GazeboEnvironment:
         timeout = 3
         success = 4
 
+    class SingleWorldManager:
+        def __init__(self, agent_type, verbose, threads, supernamespace="PYTHONGAZEBO"):
+            self.agent_type = agent_type
+            self.supernamespace = supernamespace
+            self.verbose = verbose
+            self.roscore = None
+            self.world = None
+
+        def end(self, world):
+            pass
+
+        def kill(self):
+            self.world.end()
+
+        def start(self):
+            self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=3)
+            rospy.set_param('/use_sim_time', True)
+            rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
+
+            self.world = World(self.agent_type, 11345, self.verbose, self.supernamespace)
+            self.world.run(pause_process=False)
+            self.world.wait()
+
+        def connect(self):
+            self.world.reset()
+            return self.world
+
     class WorldManager:
         def __init__(self, agent_type, verbose, threads, supernamespace="PYTHONGAZEBO"):
             self.is_running = Value('b', True)
-            self.worlds = Queue(2)
+            self.worlds = Queue(10)
             self.total_worlds = Value('d', 0)
             self.verbose = verbose
             self.agent_type = agent_type
             self.current_world = None
+            self.deck_world = None
             self.threads = threads
             self.supernamespace = supernamespace
 
@@ -123,7 +185,7 @@ class GazeboEnvironment:
             self.is_running.value = False
 
         def start(self):
-            self.roscore = _popen(['roscore'], self.verbose, sleeptime=1)
+            self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=1)
             rospy.set_param('/use_sim_time', True)
             rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
 
@@ -138,15 +200,20 @@ class GazeboEnvironment:
             atexit.register(self._on_end, self.worlds, self.is_running, self.roscore, creation_threads)
 
             # Wait for worlds
-            w = self.worlds.get(block=True)
-            self.worlds.put(w)
+            self.current_world = self.worlds.get(block=True)
+            self.current_world.resume()
 
         def connect(self):
             while self.is_running.value:
                 try:
-                    self.current_world = self.worlds.get(timeout=1)
-                    return self.current_world
-                except QueueEmpty as e:
+                    current = self.current_world
+                    self.deck_world = self.worlds.get(timeout=1)
+                    self.deck_world.resume()
+                    self.current_world = self.deck_world
+
+                    current.wait()
+                    return current
+                except (QueueEmpty, rospy.exceptions.ROSException) as e:
                     pass
 
         @staticmethod
@@ -163,7 +230,7 @@ class GazeboEnvironment:
 
                     while is_running.value:
                         try:
-                            worlds.put(miniworld, timeout=.1)
+                            worlds.put(miniworld, timeout=1)
                             break
                         except QueueFull as e:
                             pass
@@ -185,6 +252,9 @@ class GazeboEnvironment:
             if self.current_world is not None:
                 self.current_world.end()
 
+            if self.deck_world is not None:
+                self.deck_world.end()
+
             while not worlds.empty():
                 world = worlds.get()
                 world.end()
@@ -199,12 +269,12 @@ class GazeboEnvironment:
             roscore.terminate()
             roscore.wait()
 
-    def __init__(self):
+    def __init__(self, verbose=False):
         self.image_bridge = CvBridge()
         self.frame = 0
         self.max_frames = 1000
 
-        self.verbose = False
+        self.verbose = verbose
         self.render = False
 
         self.current_world = None
@@ -216,21 +286,25 @@ class GazeboEnvironment:
         self.odometry = None
         self.goal_radius = 2
 
-        # TODO: read resolution from xacro
-        # TODO: get bounds from James
-        self._action_space = spaces.Box(low=-100, high=100, shape=(4,))
-        self._observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)), spaces.Box(low=0, high=255, shape=(320, 240, 1))])
-
         self.agent_name = 'neo'
 
-        self.world_manager = GazeboEnvironment.WorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=1)
+        # TODO: get bounds from James
+        self._action_space = spaces.Box(low=-100, high=100, shape=(4,))
+        self.resolution = World._get_resolution(self.agent_name)
+        self._observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
+                                                spaces.Box(low=0, high=255, shape=(self.resolution[0], self.resolution[1], 1))])
+
+
+        self.world_manager = GazeboEnvironment.SingleWorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=5)
         self.world_manager.start()
+
+        self.last_stamp = 0
 
         self.reset()
 
     def _connect(self):
         if self.current_world is not None:
-            self.current_world.end()
+            self.world_manager.end(self.current_world)
             [l.unregister() for l in self.listeners]
 
         self.current_world = self.world_manager.connect()
@@ -267,6 +341,7 @@ class GazeboEnvironment:
     def _on_contact(self, message):
         for collision in message.states:
             if self._is_deadly_collision(collision):
+                self.frame_lock.release()
                 self.flying_status = self.Status.crashed
 
     def _on_odometry(self, message):
@@ -284,7 +359,7 @@ class GazeboEnvironment:
     def _set_waypoint(self, position):
         cmd = Command()
         cmd.x, cmd.y, cmd.z, cmd.F = position[0], position[1], 0, position[2]
-        cmd.mode = Command.MODE_XPOS_YPOS_YAW_ALTITUDE
+        cmd.mode = Command.MODE_XPOS_YPOS_YAW_ALTITUDE  # MODE_ROLL_PITCH_YAWRATE_THROTTLE
         self.waypoint_op.publish(cmd)
 
     @staticmethod
@@ -328,14 +403,15 @@ class GazeboEnvironment:
             return (odometry, state['camera'])
         return (np.zeros([7,]), state['camera'])
 
-    @timeout_decorator.timeout(1)
+    @timeout_decorator.timeout(1.0)
     def _step(self):
         last = self.frame
         self.step_op.publish(self.current_world.step_size)
 
         # Infinite loop, timeout_decorator handles timeout
         # I couldn't get acquire's timeout argument to work when sending SIGINT with ctrl+c
-        self.frame_lock.acquire(block=True)
+        while last == self.frame:
+            pass
 
         # Let the user know how many frames actually transpired between pauses
         return self.frame - last
@@ -343,9 +419,15 @@ class GazeboEnvironment:
     def step(self, command):
         self._send_command(command)
         before_state = self.state
-        self._step()
-        reward = self._reward_(before_state, self.state)
-        terminal = self._terminal()
+
+        for attempt in range(3):
+            try:
+                self._step()
+                reward = self._reward_(before_state, self.state)
+                terminal = self._terminal()
+                break
+            except timeout_decorator.TimeoutError as e:
+                terminal, reward = True, 0
 
         return self._state_to_observation(self.state), reward, terminal, {}
 
@@ -360,22 +442,28 @@ class GazeboEnvironment:
     def observation_space(self):
         return self._observation_space
 
-    def reset(self, attempt=0):
-        if self._connect():
-            self.unpause_sim_op()
-            self.flying_status = self.Status.flying
-            self.state = None
-            self.odometry = None
-            self._set_waypoint(self.current_world.goal)
-            self.frame = 0
-            self.last_command = None
+    def reset(self):
+        for attempt in range(3):
+            try:
+                if self._connect():
+                    self.unpause_sim_op()
+                    self.flying_status = self.Status.flying
+                    self.state = None
+                    self.odometry = None
+                    self._set_waypoint(self.current_world.goal)
+                    self.frame = 0
+                    self.last_command = None
 
-            while self.frame == 0 and self.state is None:
-                self._step()
+                    while self.frame == 0 and self.state is None:
+                        self._step()
 
-            if self._terminal():
-                self.reset()
+                    if self._terminal():
+                        self.reset()
 
-            return self._state_to_observation(self.state)
+                    return self._state_to_observation(self.state)
+            except timeout_decorator.TimeoutError:
+                print 'Timeout Error'
+                pass
 
-        raise Exception
+        self.world_manager.kill()
+        raise Exception('Consecutive timeouts experienced')
