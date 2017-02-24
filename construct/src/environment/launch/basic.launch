@@ -23,14 +23,14 @@
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="verbose" value="$(arg verbose)"/>
       <arg name="world_name" value="$(arg world_file)"/>
-      <arg name="paused" value="false"/>
+      <arg name="paused" value="true"/>
       <arg name="gui" value="$(arg render)"/>
     </include>
 
     <!-- Spawn in Gazebo -->
     <include file="$(find fcu_sim)/launch/spawn_mav.launch">
       <arg name="mav_name"            value="$(arg mav_name)" />
-      <arg name="model"               value="$(find environment)/models/agent_models/neo.xacro" />
+      <arg name="model"               value="$(find environment)/models/agent_models/$(arg mav_name).xacro" />
       <arg name="enable_ground_truth" value="true" />
       <arg name="x"                   value="$(arg x)"/>
       <arg name="y"                   value="$(arg y)"/>
@@ -56,22 +56,22 @@
         <param name="control_mode" value="5"/>
         <remap from="command" to="high_level_command"/>
       </node> -->
-      
+
       <!-- Position Controller -->
       <rosparam command="load" file="$(find environment)/models/agent_models/neo_controller.yaml" ns="controller"/>
       <node name="controller" pkg="ros_copter" type="controller" output="screen">
         <remap from="estimate" to="ground_truth/odometry"/>
-      </node>pytho
+      </node>
 
       <!-- Is Flying Publisher -->
-      <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true" output="screen"/>
+      <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true"/>
 
-      <!-- Waypoint Manager -->
+      <!-- Waypoint Manager
       <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
         <rosparam command="load" file="$(find ros_copter)/params/waypoints.yaml"/>
         <remap from="waypoint" to="high_level_command"/>
         <remap from="state" to="ground_truth/odometry"/>
-      </node>
+      </node> -->
 
       <!-- Reactive Planner -->
 <!--       <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
@@ -82,7 +82,7 @@
       <node name="fpv" pkg="image_view" type="image_view">
         <remap from="image" to="camera/rgb"/>
       </node>
-      
+
 
 
     </group>

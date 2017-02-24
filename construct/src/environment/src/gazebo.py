@@ -97,7 +97,7 @@ class World:
         self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
         self.reset_op()
         
-        self.load_models(self.world_file)
+        # self.load_models(self.world_file)
 
 
     def end(self):
