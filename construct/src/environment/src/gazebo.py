@@ -64,7 +64,7 @@ class World:
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
                      'world_file:=' + str(self.world_file),
-                     'yaw:=' + str(90),
+                     'yaw:=' + str(45),
                      'render:=' + str(False),
                      'mav_name:=' + self.agent,
                      'verbose:=' + str(self.verbose),
@@ -75,8 +75,6 @@ class World:
         self.process = _popen(["roslaunch", '--screen'] + arguments, self.verbose, sleeptime=3)
         self.wait()
 
-        self.load_op = rospy.Publisher(self.namespace + '/gazebo/load_models', String, queue_size=1)
-
         if pause_process:
             self.pause()
 
@@ -84,7 +82,7 @@ class World:
         self.load_op.publish(filename)
 
     def wait(self):
-        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
+        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_world', Empty, persistent=False)
         self.reset_op.wait_for_service(10)
 
     def pause(self):
@@ -94,11 +92,7 @@ class World:
         _popen(['pkill', '-f', '-SIGCONT', self.namespace[1:]], verbose=True, sleeptime=0.01)
 
     def reset(self):
-        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
         self.reset_op()
-        
-        # self.load_models(self.world_file)
-
 
     def end(self):
         if self.process:
@@ -121,14 +115,14 @@ class World:
     def _get_resolution(agent):
         xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
-        assert t is not None, 'step_camera not found in ' + xacro_filename
+        # assert t is not None, 'step_camera not found in ' + xacro_filename
         return (int(t.attrib['width']), int(t.attrib['height'])) if t is not None else (320, 250)
 
     @staticmethod
     def _get_update_rate(agent):
         xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
-        assert t is not None, 'step_camera not found in ' + xacro_filename
+        # assert t is not None, 'step_camera not found in ' + xacro_filename
         return int(t.attrib['frame_rate']) if t is not None else 25
 
 
@@ -367,6 +361,7 @@ class GazeboEnvironment:
     def _is_deadly_collision(collision):
         normal = np.abs(np.array([collision.contact_normals[0].x, collision.contact_normals[0].y, collision.contact_normals[0].z]))
         force = np.abs(np.array([collision.total_wrench.force.x, collision.total_wrench.force.y, collision.total_wrench.force.z]))
+        print (normal * force).dot(np.array([1, 1, 1]))
         return (normal * force).dot(np.array([1, 1, 1])) > 1
 
     def _reward_(self, before, after):

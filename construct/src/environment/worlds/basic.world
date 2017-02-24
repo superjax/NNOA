@@ -1,7 +1,6 @@
-<?xml version="1.0" ?>
 <sdf version="1.4">
   <world name="default">
-    <plugin name="${namespace}/step_controller" filename="libworld_utilities.so"></plugin>
+    <plugin filename="libworld_utilities.so" name="${namespace}/step_controller" />
     <include>
       <uri>model://ground_plane</uri>
     </include>
@@ -9,7 +8,7 @@
       <uri>model://sun</uri>
     </include>
 
-    <physics type='ode'>
+    <physics type="ode">
       <ode>
         <solver>
           <type>quick</type>
@@ -27,12 +26,11 @@
       <real_time_update_rate>0</real_time_update_rate>
       <gravity>0 0 -9.8</gravity>
     </physics>
-    <gui fullscreen='0'>
-      <camera name='user_camera'>
+    <gui fullscreen="0">
+      <camera name="user_camera">
         <pose>-80.5816 -16.0406 250.2835 -7.65609e-19 1.28364 -0.003809</pose>
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
-
   </world>
 </sdf>
