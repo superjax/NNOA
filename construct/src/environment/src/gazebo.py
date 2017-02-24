@@ -30,9 +30,7 @@ def _popen(command, verbose=True, sleeptime=1):
     process = subprocess.Popen(command,
                                stdout=open(os.devnull, 'w') if not verbose else None,
                                stderr=open(os.devnull, 'w') if not verbose else None)
-
     time.sleep(sleeptime)
-
     return process
 
 
@@ -72,17 +70,15 @@ class World:
                      'gzserver_port:=' + str(int(self.port))
                      ]
 
+        self.randomize_obstacles_op = rospy.ServiceProxy(self.namespace + '/gazebo/randomize_obstacles', Empty, persistent=False)
         self.process = _popen(["roslaunch", '--screen'] + arguments, self.verbose, sleeptime=3)
         self.wait()
 
         if pause_process:
             self.pause()
 
-    def load_models(self, filename):
-        self.load_op.publish(filename)
-
     def wait(self):
-        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_world', Empty, persistent=False)
+        self.reset_op = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
         self.reset_op.wait_for_service(10)
 
     def pause(self):
@@ -92,6 +88,7 @@ class World:
         _popen(['pkill', '-f', '-SIGCONT', self.namespace[1:]], verbose=True, sleeptime=0.01)
 
     def reset(self):
+        self.randomize_obstacles_op()
         self.reset_op()
 
     def end(self):
@@ -135,7 +132,7 @@ class GazeboEnvironment:
         success = 4
 
     class SingleWorldManager:
-        def __init__(self, agent_type, verbose, threads, supernamespace="PYTHONGAZEBO"):
+        def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ"):
             self.agent_type = agent_type
             self.supernamespace = supernamespace
             self.verbose = verbose
@@ -146,7 +143,13 @@ class GazeboEnvironment:
             pass
 
         def kill(self):
-            self.world.end()
+            self._on_end(self.world, self.roscore)
+
+        def _on_end(self, world, roscore):
+            world.end()
+            rospy.signal_shutdown('')
+            roscore.terminate()
+            roscore.wait()
 
         def start(self):
             self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=3)
@@ -157,111 +160,113 @@ class GazeboEnvironment:
             self.world.run(pause_process=False)
             self.world.wait()
 
+            atexit.register(self._on_end, self.world, self.roscore)
+
         def connect(self):
             self.world.reset()
             return self.world
 
-    class WorldManager:
-        def __init__(self, agent_type, verbose, threads, supernamespace="PYTHONGAZEBO"):
-            self.is_running = Value('b', True)
-            self.worlds = Queue(10)
-            self.total_worlds = Value('d', 0)
-            self.verbose = verbose
-            self.agent_type = agent_type
-            self.current_world = None
-            self.deck_world = None
-            self.threads = threads
-            self.supernamespace = supernamespace
+    # class WorldManager:
+    #     def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ"):
+    #         self.is_running = Value('b', True)
+    #         self.worlds = Queue(10)
+    #         self.total_worlds = Value('d', 0)
+    #         self.verbose = verbose
+    #         self.agent_type = agent_type
+    #         self.current_world = None
+    #         self.deck_world = None
+    #         self.threads = threads
+    #         self.supernamespace = supernamespace
 
-            self.roscore = None
+    #         self.roscore = None
 
-        def kill(self):
-            self.is_running.value = False
+    #     def kill(self):
+    #         self.is_running.value = False
 
-        def start(self):
-            self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=1)
-            rospy.set_param('/use_sim_time', True)
-            rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
+    #     def start(self):
+    #         self.roscore = _popen(['rosmaster', '--core'], self.verbose, sleeptime=1)
+    #         rospy.set_param('/use_sim_time', True)
+    #         rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
 
-            creation_threads = []
-            for _ in range(self.threads):
-                p = Process(target=self._world_thread,
-                            args=[self.worlds, self.is_running, self.agent_type, self.total_worlds, self.verbose, self.supernamespace])
-                p.daemon = True
-                p.start()
-                creation_threads.append(p)
+    #         creation_threads = []
+    #         for _ in range(self.threads):
+    #             p = Process(target=self._world_thread,
+    #                         args=[self.worlds, self.is_running, self.agent_type, self.total_worlds, self.verbose, self.supernamespace])
+    #             p.daemon = True
+    #             p.start()
+    #             creation_threads.append(p)
 
-            atexit.register(self._on_end, self.worlds, self.is_running, self.roscore, creation_threads)
+    #         atexit.register(self._on_end, self.worlds, self.is_running, self.roscore, creation_threads)
 
-            # Wait for worlds
-            self.current_world = self.worlds.get(block=True)
-            self.current_world.resume()
+    #         # Wait for worlds
+    #         self.current_world = self.worlds.get(block=True)
+    #         self.current_world.resume()
 
-        def connect(self):
-            while self.is_running.value:
-                try:
-                    current = self.current_world
-                    self.deck_world = self.worlds.get(timeout=1)
-                    self.deck_world.resume()
-                    self.current_world = self.deck_world
+    #     def connect(self):
+    #         while self.is_running.value:
+    #             try:
+    #                 current = self.current_world
+    #                 self.deck_world = self.worlds.get(timeout=1)
+    #                 self.deck_world.resume()
+    #                 self.current_world = self.deck_world
 
-                    current.wait()
-                    return current
-                except (QueueEmpty, rospy.exceptions.ROSException) as e:
-                    pass
+    #                 current.wait()
+    #                 return current
+    #             except (QueueEmpty, rospy.exceptions.ROSException) as e:
+    #                 pass
 
-        @staticmethod
-        def _world_thread(worlds, is_running, agent, total_worlds, verbose, supernamespace):
-            miniworld = None
-            while is_running.value:
-                total_worlds.value += 1
-                port_delta = random.randrange(100, 1000) + total_worlds.value
-                miniworld = World(agent, 11345 + port_delta, verbose, supernamespace)
+    #     @staticmethod
+    #     def _world_thread(worlds, is_running, agent, total_worlds, verbose, supernamespace):
+    #         miniworld = None
+    #         while is_running.value:
+    #             total_worlds.value += 1
+    #             port_delta = random.randrange(100, 1000) + total_worlds.value
+    #             miniworld = World(agent, 11345 + port_delta, verbose, supernamespace)
 
-                try:
-                    if is_running.value:
-                        miniworld.run()
+    #             try:
+    #                 if is_running.value:
+    #                     miniworld.run()
 
-                    while is_running.value:
-                        try:
-                            worlds.put(miniworld, timeout=1)
-                            break
-                        except QueueFull as e:
-                            pass
+    #                 while is_running.value:
+    #                     try:
+    #                         worlds.put(miniworld, timeout=1)
+    #                         break
+    #                     except QueueFull as e:
+    #                         pass
 
-                except KeyboardInterrupt:
-                    is_running.value = False
+    #             except KeyboardInterrupt:
+    #                 is_running.value = False
 
-                except rospy.ROSException as e:
-                    pass
+    #             except rospy.ROSException as e:
+    #                 pass
 
-            # Worlds, created, but not in the queue that won't be cleaned up by _on_end
-            if miniworld is not None:
-                miniworld.end()
+    #         # Worlds, created, but not in the queue that won't be cleaned up by _on_end
+    #         if miniworld is not None:
+    #             miniworld.end()
 
-        def _on_end(self, worlds, is_running, roscore, creation_threads):
-            with is_running.get_lock():
-                is_running.value = False
+    #     def _on_end(self, worlds, is_running, roscore, creation_threads):
+    #         with is_running.get_lock():
+    #             is_running.value = False
 
-            if self.current_world is not None:
-                self.current_world.end()
+    #         if self.current_world is not None:
+    #             self.current_world.end()
 
-            if self.deck_world is not None:
-                self.deck_world.end()
+    #         if self.deck_world is not None:
+    #             self.deck_world.end()
 
-            while not worlds.empty():
-                world = worlds.get()
-                world.end()
-            worlds.close()
-            worlds.join_thread()
+    #         while not worlds.empty():
+    #             world = worlds.get()
+    #             world.end()
+    #         worlds.close()
+    #         worlds.join_thread()
 
-            for p in creation_threads:
-                p.terminate()
-                p.join()
+    #         for p in creation_threads:
+    #             p.terminate()
+    #             p.join()
 
-            rospy.signal_shutdown('')
-            roscore.terminate()
-            roscore.wait()
+    #         rospy.signal_shutdown('')
+    #         roscore.terminate()
+    #         roscore.wait()
 
     def __init__(self, verbose=False):
         self.image_bridge = CvBridge()
@@ -334,7 +339,6 @@ class GazeboEnvironment:
 
     def _on_contact(self, message):
         for collision in message.states:
-            print "collided!"
             if self._is_deadly_collision(collision):
                 self.frame_lock.release()
                 self.flying_status = self.Status.crashed
@@ -361,7 +365,6 @@ class GazeboEnvironment:
     def _is_deadly_collision(collision):
         normal = np.abs(np.array([collision.contact_normals[0].x, collision.contact_normals[0].y, collision.contact_normals[0].z]))
         force = np.abs(np.array([collision.total_wrench.force.x, collision.total_wrench.force.y, collision.total_wrench.force.z]))
-        print (normal * force).dot(np.array([1, 1, 1]))
         return (normal * force).dot(np.array([1, 1, 1])) > 1
 
     def _reward_(self, before, after):
