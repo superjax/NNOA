@@ -177,9 +177,6 @@ class GazeboEnvironment:
         self.reset()
 
     def _on_cameraframe(self, message):
-        if self.last_frame != 0:
-            print (self.last_frame - message.header.stamp).to_sec()
-        self.last_frame = message.header.stamp
         self.state = {'camera': np.asarray(self.image_bridge.imgmsg_to_cv2(message, "mono8")),
                       'odometry': self.odometry}
 
@@ -258,9 +255,9 @@ class GazeboEnvironment:
 
         # Infinite loop, timeout_decorator handles timeout
         # I couldn't get acquire's timeout argument to work when sending SIGINT with ctrl+c
-        # self.frame_lock.acquire(block=True, timeout=0.80)
-        while last == self.frame:
-            pass
+        self.frame_lock.acquire(block=True, timeout=0.80)
+        # while last == self.frame:
+        #     pass
 
         # Let the user know how many frames actually transpired between pauses
         return self.frame - last
