@@ -160,52 +160,48 @@ for episode in tqdm(range(1000)):
     history = []
 
     for step in tqdm(range(MAX_EPISODE_LENGTH)):
-        # action = sess.run(train_actor_output, feed_dict={k: [v] for k, v in zip(state_placeholders, env_state)})[0]
-        #
-        # action = action if testing else np.clip(action, -1, 1) + eta_noise.ou(theta=.15, sigma=.2)
+        action = sess.run(train_actor_output, feed_dict={k: [v] for k, v in zip(state_placeholders, env_state)})[0]
 
-        action = np.array([25.0, 0.0, 0.0, -10.0])
-        import time
-        time.sleep(.5)
-        #
-        # assert action.shape == env.action_space.sample().shape, (action.shape, env.action_space.sample().shape)
+        action = action if testing else np.clip(action, -1, 1) + eta_noise.ou(theta=.15, sigma=.2)
+
+        assert action.shape == env.action_space.sample().shape, (action.shape, env.action_space.sample().shape)
 
         env_next_state, env_reward, env_done, env_info = env.step(np.clip(action, -1, 1) * 3*np.pi)
 
-        # replay_buffer.append([env_state, action, env_reward, env_next_state, env_done])
-        #
-        # replay_priorities_sum -= replay_priorities[len(replay_buffer) - 1]
-        # replay_priorities[len(replay_buffer) - 1] = 300
-        # replay_priorities_sum += replay_priorities[len(replay_buffer) - 1]
-        #
-        # env_state = env_next_state
-        #
-        # if training:
-        #     p_errors = replay_priorities[:len(replay_buffer)] / replay_priorities_sum
-        #     minibatch_indexes = np.random.choice(range(len(replay_buffer)), size=BATCH_SIZE, replace=False, p=p_errors)
-        #
-        #     states_batch = [np.array([replay_buffer[i][0][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
-        #     next_states_batch = [np.array([replay_buffer[i][3][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
-        #
-        #     action_batch = np.array([replay_buffer[i][1] for i in minibatch_indexes])
-        #     reward_batch = np.array([replay_buffer[i][2] for i in minibatch_indexes])
-        #     done_batch = np.array([replay_buffer[i][4] for i in minibatch_indexes])
-        #
-        #     feed = {
-        #         action_placeholder: action_batch,
-        #         reward_placeholder: reward_batch,
-        #         done_placeholder: done_batch
-        #     }
-        #
-        #     feed.update({k: v for k, v in zip(state_placeholders, states_batch)})
-        #     feed.update({k: v for k, v in zip(next_state_placeholder, next_states_batch)})
-        #
-        #     _, _, errors = sess.run([train_critic, train_actor, q_error], feed_dict=feed)
-        #
-        #     for i, error in zip(minibatch_indexes, errors):
-        #         replay_priorities_sum -= replay_priorities[i]
-        #         replay_priorities[i] = error
-        #         replay_priorities_sum += replay_priorities[i]
+        replay_buffer.append([env_state, action, env_reward, env_next_state, env_done])
+
+        replay_priorities_sum -= replay_priorities[len(replay_buffer) - 1]
+        replay_priorities[len(replay_buffer) - 1] = 300
+        replay_priorities_sum += replay_priorities[len(replay_buffer) - 1]
+
+        env_state = env_next_state
+
+        if training:
+            p_errors = replay_priorities[:len(replay_buffer)] / replay_priorities_sum
+            minibatch_indexes = np.random.choice(range(len(replay_buffer)), size=BATCH_SIZE, replace=False, p=p_errors)
+
+            states_batch = [np.array([replay_buffer[i][0][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
+            next_states_batch = [np.array([replay_buffer[i][3][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
+
+            action_batch = np.array([replay_buffer[i][1] for i in minibatch_indexes])
+            reward_batch = np.array([replay_buffer[i][2] for i in minibatch_indexes])
+            done_batch = np.array([replay_buffer[i][4] for i in minibatch_indexes])
+
+            feed = {
+                action_placeholder: action_batch,
+                reward_placeholder: reward_batch,
+                done_placeholder: done_batch
+            }
+
+            feed.update({k: v for k, v in zip(state_placeholders, states_batch)})
+            feed.update({k: v for k, v in zip(next_state_placeholder, next_states_batch)})
+
+            _, _, errors = sess.run([train_critic, train_actor, q_error], feed_dict=feed)
+
+            for i, error in zip(minibatch_indexes, errors):
+                replay_priorities_sum -= replay_priorities[i]
+                replay_priorities[i] = error
+                replay_priorities_sum += replay_priorities[i]
 
         if env_done:
             break
