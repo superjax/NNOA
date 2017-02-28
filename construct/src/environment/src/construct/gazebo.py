@@ -226,7 +226,8 @@ class GazeboEnvironment:
         if before and after:
             then = np.array([before.pose.pose.position.x, before.pose.pose.position.y, before.pose.pose.position.z])
             now = np.array([after.pose.pose.position.x, after.pose.pose.position.y, after.pose.pose.position.z])
-            return euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal)
+            bonus = 100 * (euclidean(now, self.world_manager.world.goal) < self.goal_radius)
+            return euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal) + bonus
         return 0
 
     def _terminal_status(self):
