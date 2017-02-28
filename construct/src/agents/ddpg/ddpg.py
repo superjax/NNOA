@@ -152,7 +152,7 @@ replay_priorities = np.zeros(replay_buffer.maxlen, dtype=np.float64)
 replay_priorities_sum = 0
 rewards = []
 
-for episode in tqdm(range(1000)):
+for episode in tqdm(range(10000)):
     env_state = env.reset()
     eta_noise = Noise()
     training = len(replay_buffer) >= min(ITERATIONS_BEFORE_TRAINING, replay_buffer.maxlen)
