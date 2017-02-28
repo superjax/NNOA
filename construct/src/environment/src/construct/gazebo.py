@@ -44,6 +44,8 @@ class World:
 
         self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
 
+        self.world_file = os.path.abspath(self.path + "/../../worlds/basic.world")
+
         # There is an annoying flip that happens for the goal altitude
         self.goal[1] *= -1
         self.goal[2] *= -1
