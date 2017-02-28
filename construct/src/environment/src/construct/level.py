@@ -73,11 +73,11 @@ def generate_world(num_objects):
 
     def objects_to_world(objects, base_file="basic.world"):
         sdf = xml.etree.ElementTree.ElementTree()
-        sdf.parse(os.path.dirname(os.path.abspath(__file__)) + "/../worlds/" + base_file)
+        sdf.parse(os.path.dirname(os.path.abspath(__file__)) + "/../../worlds/" + base_file)
         world = sdf.find('world')
 
-        new_tree_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../models/object_models/tree.sdf").getroot()
-        new_goal_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../models/object_models/goal.sdf").getroot()
+        new_tree_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../../models/object_models/tree.sdf").getroot()
+        new_goal_model = lambda: xml.etree.ElementTree.parse(os.path.dirname(os.path.abspath(__file__)) + "/../../models/object_models/goal.sdf").getroot()
 
         for i, (x, y, z, r, type) in enumerate(objects):
             # if type == 1:
