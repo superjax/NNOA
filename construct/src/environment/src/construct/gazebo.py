@@ -97,7 +97,7 @@ class World:
         xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
         # assert t is not None, 'step_camera not found in ' + xacro_filename
-        return (int(t.attrib['width']), int(t.attrib['height'])) if t is not None else (320, 250)
+        return (int(float(t.attrib['width'])), int(float(t.attrib['height']))) if t is not None else (320, 250)
 
     @staticmethod
     def _get_update_rate(agent):
