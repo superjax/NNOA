@@ -52,12 +52,12 @@ class World:
 
         max_step_size = self._get_step_size(self.world_file)
         update_rate = self._get_update_rate(agent)
-        self.step_size = (1.0 / update_rate) / max_step_size * 2 - 1
+        self.step_size = (1.0 / update_rate) / max_step_size
 
         assert math.floor((1.0 / update_rate) / max_step_size) == (1.0 / update_rate) / max_step_size
 
     def run(self, pause_process=True):
-        arguments = [os.path.abspath(self.path + "/../launch/basic.launch"),
+        arguments = [os.path.abspath(self.path + "/../../launch/basic.launch"),
                      'x:=' + str(self.start[0]),
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
@@ -94,14 +94,14 @@ class World:
 
     @staticmethod
     def _get_resolution(agent):
-        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
+        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
         # assert t is not None, 'step_camera not found in ' + xacro_filename
         return (int(t.attrib['width']), int(t.attrib['height'])) if t is not None else (320, 250)
 
     @staticmethod
     def _get_update_rate(agent):
-        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../models/agent_models/' + agent + '.xacro'
+        xacro_filename = os.path.dirname(os.path.abspath(__file__)) + '/../../models/agent_models/' + agent + '.xacro'
         t = xml.etree.ElementTree.parse(xacro_filename).getroot().find('./{http://ros.org/wiki/xacro}step_camera')
         # assert t is not None, 'step_camera not found in ' + xacro_filename
         return int(t.attrib['frame_rate']) if t is not None else 25
@@ -116,12 +116,15 @@ class GazeboEnvironment:
         success = 4
 
     class SingleWorldManager:
-        def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ"):
-            self.roscore = _popen(['rosmaster', '--core'], verbose, sleeptime=3)
-            rospy.set_param('/use_sim_time', True)
-            rospy.init_node('pythonsim', anonymous=True, disable_signals=True)
+        def __init__(self, agent_type, verbose, threads, supernamespace="PYGZ_"):
+            try:
+                rospy.get_published_topics(namespace='/')
+            except Exception as e:
+                self.roscore = _popen(['rosmaster', '--core'], verbose, sleeptime=3)
+                rospy.set_param('/use_sim_time', True)
+                rospy.init_node('SIMNODE_' + str(uuid.uuid4().get_hex().upper()), anonymous=True, disable_signals=True)
 
-            self.world = World(agent_type, 11345, verbose, supernamespace)
+            self.world = World(agent_type, 11345 + np.random.randint(0, 9999), verbose, supernamespace)
             self.world.run(pause_process=False)
 
             atexit.register(self.kill)
@@ -157,7 +160,7 @@ class GazeboEnvironment:
         self.action_space = spaces.Box(low=-bounds, high=bounds)
         self.resolution = World._get_resolution(self.agent_name)
         self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
-                                                spaces.Box(low=0, high=255, shape=(self.resolution[0], self.resolution[1], 1))])
+                                                spaces.Box(low=0, high=1, shape=(self.resolution[1], self.resolution[0], 1))])
 
         self.world_manager = GazeboEnvironment.SingleWorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=5)
         ns = self.world_manager.world.namespace
@@ -177,6 +180,11 @@ class GazeboEnvironment:
         self.reset()
 
     def _on_cameraframe(self, message):
+        # TODO: Remove this code when you are convinced you don't need it anymore.
+        # It displays the actual simulation time between frames
+        # if self.last_frame:
+        #     print self.last_frame.header.stamp.to_sec() - message.header.stamp.to_sec()
+        # self.last_frame = message
         self.state = {'camera': np.asarray(self.image_bridge.imgmsg_to_cv2(message, "mono8")),
                       'odometry': self.odometry}
 
@@ -193,6 +201,7 @@ class GazeboEnvironment:
                 self.flying_status = self.Status.crashed
 
     def _on_odometry(self, message):
+        self.last_odometry = self.odometry
         self.odometry = message
 
     def _send_command(self, data):
@@ -213,10 +222,10 @@ class GazeboEnvironment:
         force = np.abs(np.array([collision.total_wrench.force.x, collision.total_wrench.force.y, collision.total_wrench.force.z]))
         return (normal * force).sum() > 1
 
-    def _reward_(self, before, after):
-        if before['odometry'] and after['odometry']:
-            then = np.array([before['odometry'].pose.pose.position.x, before['odometry'].pose.pose.position.y, before['odometry'].pose.pose.position.z])
-            now = np.array([after['odometry'].pose.pose.position.x, after['odometry'].pose.pose.position.y, after['odometry'].pose.pose.position.z])
+    def _reward(self, before, after):
+        if before and after:
+            then = np.array([before.pose.pose.position.x, before.pose.pose.position.y, before.pose.pose.position.z])
+            now = np.array([after.pose.pose.position.x, after.pose.pose.position.y, after.pose.pose.position.z])
             return euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal)
         return 0
 
@@ -245,10 +254,9 @@ class GazeboEnvironment:
             pose = state['odometry'].pose.pose
             odometry = [pose.position.x, pose.position.y, pose.position.z] + \
                        [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
-            return (odometry, state['camera'])
-        return (np.zeros([7,]), state['camera'])
+            return (odometry, state['camera'] / 255.0)
+        return (np.zeros([7,]), state['camera'] / 255.0)
 
-    @timeout_decorator.timeout(1.0)
     def _step(self):
         last = self.frame
         self.step_op.publish(self.world_manager.world.step_size)
@@ -256,8 +264,6 @@ class GazeboEnvironment:
         # Infinite loop, timeout_decorator handles timeout
         # I couldn't get acquire's timeout argument to work when sending SIGINT with ctrl+c
         self.frame_lock.acquire(block=True, timeout=0.80)
-        # while last == self.frame:
-        #     pass
 
         # Let the user know how many frames actually transpired between pauses
         return self.frame - last
@@ -269,7 +275,7 @@ class GazeboEnvironment:
         for attempt in range(3):
             try:
                 self._step()
-                reward = self._reward_(before_state, self.state)
+                reward = self._reward(self.last_odometry, self.odometry)
                 terminal = self._terminal()
                 break
             except timeout_decorator.TimeoutError as e:
