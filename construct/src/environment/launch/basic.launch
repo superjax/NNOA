@@ -74,9 +74,9 @@
       </node> -->
 
       <!-- Reactive Planner -->
-<!--       <node name="reactive_planner" pkg="reactive_planner" type="reactive_planner_node">
-        <remap from="state" to="$(arg ns)/$(arg mav_name)/ground_truth/odometry"/>
-      </node> -->
+      <node pkg="obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance">
+        <param name="plotting" value="true"/>
+      </node>
 
       <!-- FPV -->
       <node name="fpv" pkg="image_view" type="image_view">
