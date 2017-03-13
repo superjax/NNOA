@@ -25,6 +25,7 @@ import os
 import random
 from gym import spaces
 import signal
+import cv2
 
 def _popen(command, verbose=True, sleeptime=1):
     process = subprocess.Popen(command,
@@ -42,9 +43,12 @@ class World:
         self.port = port
         self.process = None
 
-        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
+        # Add an optional 'address' key if address != name
+        # Note also, the user has to be the currently logged in user
+        self.machines = [{'name': 'reaper', 'user': 'remote'}]
+        self.machine = self.machines[np.random.randint(0, len(self.machines))]
 
-        self.world_file = os.path.abspath(self.path + "/../../worlds/basic.world")
+        self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
 
         # There is an annoying flip that happens for the goal altitude
         self.goal[1] *= -1
@@ -59,7 +63,7 @@ class World:
         assert math.floor((1.0 / update_rate) / max_step_size) == (1.0 / update_rate) / max_step_size
 
     def run(self, pause_process=True):
-        arguments = [os.path.abspath(self.path + "/../../launch/basic.launch"),
+        arguments = [os.path.abspath(self.path + "/../../launch/basic_local.launch"),
                      'x:=' + str(self.start[0]),
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
@@ -69,13 +73,17 @@ class World:
                      'mav_name:=' + self.agent,
                      'verbose:=' + str(self.verbose),
                      'ns:=' + self.namespace,
+                     'machine_name:=' + self.machine['name'],
+                     'machine_user:=' + self.machine['user'],
+                     'machine_address:=' + (self.machine['address'] if 'address' in self.machine else self.machine['name']),
                      'gzserver_port:=' + str(int(self.port))
                      ]
+        print arguments
 
         self.reset = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
         self.randomize_obstacles = rospy.ServiceProxy(self.namespace + '/gazebo/randomize_obstacles', Empty, persistent=False)
         self.process = _popen(["roslaunch", '--screen'] + arguments, self.verbose, sleeptime=3)
-        self.reset.wait_for_service(10)
+        self.reset.wait_for_service(20)
 
     def end(self):
         if self.process:
@@ -87,6 +95,7 @@ class World:
             # on world_creation_thread.wait() when the main program terminates since the creation threads can't terminate
             # UPDATE: I thought I could remove this, but I was wrong.
             _popen(['pkill', '-f', '-9', self.namespace[1:]], verbose=True, sleeptime=0)
+            _popen(['ssh', self.machine['user'] + '@' + self.machine['name'], 'pkill', '-f', '-9', self.namespace[1:]], verbose=True, sleeptime=0)
 
     @staticmethod
     def _get_step_size(world_filename):
@@ -161,8 +170,10 @@ class GazeboEnvironment:
         bounds = np.array([2*np.pi, 2*np.pi, 10, 1])
         self.action_space = spaces.Box(low=-bounds, high=bounds)
         self.resolution = World._get_resolution(self.agent_name)
+        # self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
+        #                                        spaces.Box(low=0, high=1, shape=(self.resolution[1], self.resolution[0], 1))])
         self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
-                                                spaces.Box(low=0, high=1, shape=(self.resolution[1], self.resolution[0], 1))])
+                                               spaces.Box(low=0, high=1, shape=(64, 64, 1))])
 
         self.world_manager = GazeboEnvironment.SingleWorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=5)
         ns = self.world_manager.world.namespace
@@ -187,7 +198,10 @@ class GazeboEnvironment:
         # if self.last_frame:
         #     print self.last_frame.header.stamp.to_sec() - message.header.stamp.to_sec()
         # self.last_frame = message
-        self.state = {'camera': np.asarray(self.image_bridge.imgmsg_to_cv2(message, "mono8")),
+
+        camera = np.asarray(self.image_bridge.imgmsg_to_cv2(message, "mono8"))
+        camera = np.expand_dims(cv2.resize(camera, (64, 64)), 4)
+        self.state = {'camera': camera,
                       'odometry': self.odometry}
 
         self.frame_lock.release()
@@ -228,9 +242,10 @@ class GazeboEnvironment:
         if before and after:
             then = np.array([before.pose.pose.position.x, before.pose.pose.position.y, before.pose.pose.position.z])
             now = np.array([after.pose.pose.position.x, after.pose.pose.position.y, after.pose.pose.position.z])
-            bonus = 100 * (euclidean(now, self.world_manager.world.goal) < self.goal_radius)
-            return euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal) + bonus
-        return 0
+            is_close_to_goal = euclidean(now, self.world_manager.world.goal) < self.goal_radius
+            bonus = 10 * (is_close_to_goal)
+            return (euclidean(then, self.world_manager.world.goal) - euclidean(now, self.world_manager.world.goal)) + bonus, is_close_to_goal
+        return 0, False
 
     def _terminal_status(self):
         status = self.flying_status
@@ -255,10 +270,13 @@ class GazeboEnvironment:
     def _state_to_observation(self, state):
         if state['odometry']:
             pose = state['odometry'].pose.pose
+
+            Odometry
+
             odometry = [pose.position.x, pose.position.y, pose.position.z] + \
                        [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
-            return (odometry, state['camera'] / 255.0)
-        return (np.zeros([7,]), state['camera'] / 255.0)
+            return (np.array(odometry), state['camera'])
+        return (np.zeros([7,]), state['camera'])
 
     def _step(self):
         last = self.frame
@@ -274,15 +292,26 @@ class GazeboEnvironment:
     def step(self, command):
         self._send_command(command)
         before_state = self.state
+        crashed = False
+        is_close_to_goal = False
+        terminal = False
+        reward = 0
 
         for attempt in range(3):
             try:
                 self._step()
-                reward = self._reward(self.last_odometry, self.odometry)
-                terminal = self._terminal()
+                crashed = self._terminal()
+                reward, is_close_to_goal = self._reward(self.last_odometry, self.odometry)
                 break
             except timeout_decorator.TimeoutError as e:
                 terminal, reward = True, 0
+
+        if crashed:
+            reward = -10
+            terminal = True
+
+        if is_close_to_goal:
+            terminal = True
 
         return self._state_to_observation(self.state), reward, terminal, {}
 

@@ -1,17 +1,18 @@
+from construct import GazeboEnvironment
+from memory import Memory
 from tqdm import tqdm
 import tensorflow as tf
 from collections import deque
 import tensorflow.contrib.slim as slim
 import numpy as np
 from scipy import stats
-from construct import GazeboEnvironment
 
-env = GazeboEnvironment(verbose=True)
+env = GazeboEnvironment(verbose=False)
 
 TAU = 0.01
 GAMMA = .99
-ACTOR_LR = 0.001
-CRITIC_LR = 0.001
+ACTOR_LR = 0.0001
+CRITIC_LR = 0.0001
 ACTOR_L2_WEIGHT_DECAY = 0.00
 CRITIC_L2_WEIGHT_DECAY = 0.01
 BATCH_SIZE = 32
@@ -29,6 +30,17 @@ def fanin_init(layer):
     v = 1.0 / np.sqrt(fanin)
     return tf.random_uniform_initializer(minval=-v, maxval=v)
 
+def bounded_constraint(forward_op, min=-1.0, max=1.0):
+    gradient_op_name = "BoundedConstraint-" + str(np.random.randint(1000, 9999))
+
+    @tf.RegisterGradient(gradient_op_name)
+    def plus_minus_one_gradient(op, grad):
+        # Inverting Gradients for Bounded Control - https://www.cs.utexas.edu/~AustinVilla/papers/ICLR16-hausknecht.pdf
+        return [grad * tf.select(grad < 0.0, tf.sign((max - op.outputs[0]) / (max-min)), tf.sign((op.outputs[0] - min) / (max-min)))]
+
+    with forward_op.graph.gradient_override_map({"Identity": gradient_op_name}):
+        return tf.identity(forward_op)
+
 
 class Noise:
     def __init__(self, ):
@@ -37,9 +49,17 @@ class Noise:
     def josh(self, mu, sigma):
         return stats.truncnorm.rvs((-1 - mu) / sigma, (1 - mu) / sigma, loc=mu, scale=sigma, size=len(self.state))
 
-    def ou(self, theta, sigma):
-        self.state -= theta * self.state - sigma * np.random.randn(len(self.state))
-        return self.state
+    def reflected_ou(self, mean, sigma=.1, theta=.1, min=0, max=1):
+        theta, sigma, min, max = map(np.array, [theta, sigma, min, max])
+        mean = np.clip(mean, min, max)
+        mu = self.state + -theta * (self.state - mean)
+        self.state = stats.truncnorm.rvs((min - mu) / sigma, (max - mu) / sigma, loc=mu, scale=sigma, size=len(self.state))
+        return self.state.copy()
+
+    def ou(self, mean, theta=.2, sigma=.15):
+        sigma, theta = np.array(sigma), np.array(theta)
+        self.state += -theta * (self.state - mean) - sigma * np.random.randn(len(self.state))
+        return self.state.copy()
 
 
 def actor_network(states, outer_scope, reuse=False):
@@ -53,8 +73,11 @@ def actor_network(states, outer_scope, reuse=False):
         net = tf.concat(1, [tf.contrib.layers.flatten(l) for l in [states[0], net]])
 
         net = slim.fully_connected(net, 100, weights_initializer=uniform_random, biases_initializer=uniform_random)
+        net = slim.fully_connected(net, 100, weights_initializer=uniform_random, biases_initializer=uniform_random)
         output = slim.fully_connected(net, ACTION_DIM, weights_initializer=uniform_random,
-                                      biases_initializer=uniform_random, activation_fn=tf.tanh)
+                                      biases_initializer=uniform_random, activation_fn=None)
+
+        output = bounded_constraint(output, min=-1.0, max=1.0)
 
     return output
 
@@ -69,25 +92,35 @@ def critic_network(states, action, outer_scope, reuse=False):
                           weights_initializer=uniform_random, biases_initializer=uniform_random)
         net = tf.concat(1, [tf.contrib.layers.flatten(l) for l in [net, action, states[0]]])
         net = slim.fully_connected(net, 100, weights_initializer=uniform_random, biases_initializer=uniform_random)
+        net = slim.fully_connected(net, 100, weights_initializer=uniform_random, biases_initializer=uniform_random)
         net = slim.fully_connected(net, 1, weights_initializer=uniform_random, biases_initializer=uniform_random,
                                    activation_fn=None)
 
         return tf.squeeze(net, [1])
 
 
-state_placeholders = [tf.placeholder(tf.float32, [None] + list(space.shape), 'state'+str(i)) for i, space in enumerate(env.observation_space.spaces)]
-next_state_placeholder = [tf.placeholder(tf.float32, [None] + list(space.shape), 'nextstate'+str(i)) for i, space in enumerate(env.observation_space.spaces)]
+# state_placeholders = [tf.placeholder(tf.float32, [None, 1] + list(space.shape), 'state'+str(i)) for i, space in enumerate(env.observation_space.spaces)]
+# next_state_placeholder = [tf.placeholder(tf.float32, [None, 1] + list(space.shape), 'nextstate'+str(i)) for i, space in enumerate(env.observation_space.spaces)]
+
+odometry_placeholder = tf.placeholder(tf.float32, [None, 1] + list(env.observation_space.spaces[0].shape), 'odometry')
+camera_placeholder = tf.placeholder(tf.uint8, [None, 1] + list(env.observation_space.spaces[1].shape), 'camera')
+
+next_odometry_placeholder = tf.placeholder(tf.float32, [None, 1] + list(env.observation_space.spaces[0].shape), 'next_odometry')
+next_camera_placeholder = tf.placeholder(tf.uint8, [None, 1] + list(env.observation_space.spaces[1].shape), 'next_camera')
+
+state_placeholders = [odometry_placeholder, tf.cast(camera_placeholder, tf.float32) / 255.0]
+next_state_placeholders = [next_odometry_placeholder, tf.cast(next_camera_placeholder, tf.float32) / 255.0]
 
 action_placeholder = tf.placeholder(tf.float32, [None, ACTION_DIM], 'action')
 reward_placeholder = tf.placeholder(tf.float32, [None], 'reward')
 done_placeholder = tf.placeholder(tf.bool, [None], 'done')
 
 train_actor_output = actor_network(state_placeholders, outer_scope='train_network')
-train_actor_next_output = actor_network(next_state_placeholder, outer_scope='train_network', reuse=True)
+train_actor_next_output = actor_network(next_state_placeholders, outer_scope='train_network', reuse=True)
 target_actor_output = actor_network(state_placeholders, outer_scope='target_network')
-target_actor_next_output = actor_network(next_state_placeholder, outer_scope='target_network', reuse=True)
+target_actor_next_output = actor_network(next_state_placeholders, outer_scope='target_network', reuse=True)
 
-target_critic_next_output = critic_network(next_state_placeholder, target_actor_next_output, outer_scope='target_network')
+target_critic_next_output = critic_network(next_state_placeholders, target_actor_next_output, outer_scope='target_network')
 train_critic_current_action = critic_network(state_placeholders, train_actor_output, outer_scope='train_network')
 train_critic_placeholder_action = critic_network(state_placeholders, action_placeholder, outer_scope='train_network', reuse=True)
 
@@ -116,11 +149,7 @@ with tf.name_scope('actor_loss'):
             *[target.assign(TAU * train + (1 - TAU) * target) for train, target in train_target_vars])
 
 with tf.name_scope('critic_loss'):
-    # q_target_value = tf.select(done_placeholder, reward_placeholder, reward_placeholder + GAMMA * tf.stop_gradient(target_critic_next_output))
-    q_target_value = tf.cast(done_placeholder, tf.float32) * reward_placeholder + (1 - tf.cast(done_placeholder,
-                                                                                               tf.float32)) * (
-                                                                                  reward_placeholder + GAMMA * tf.stop_gradient(
-                                                                                      target_critic_next_output))
+    q_target_value = tf.select(done_placeholder, reward_placeholder, reward_placeholder + GAMMA * tf.stop_gradient(target_critic_next_output))
     q_error = (q_target_value - train_critic_placeholder_action) ** 2
     q_error_batch = tf.reduce_mean(q_error)
     weight_decay_critic = tf.add_n([CRITIC_L2_WEIGHT_DECAY * tf.reduce_sum(var ** 2) for var in train_critic_vars])
@@ -147,45 +176,39 @@ sess.run([target.assign(train) for train, target in zip(train_critic_vars, targe
 
 sess.graph.finalize()
 
-replay_buffer = deque(maxlen=REPLAY_BUFFER_SIZE)
-replay_priorities = np.zeros(replay_buffer.maxlen, dtype=np.float64)
-replay_priorities_sum = 0
+replay_buffer = Memory(1, REPLAY_BUFFER_SIZE, env)
 rewards = []
 
 for episode in tqdm(range(10000)):
     env_state = env.reset()
     eta_noise = Noise()
-    training = len(replay_buffer) >= min(ITERATIONS_BEFORE_TRAINING, replay_buffer.maxlen)
+    training = replay_buffer.count >= min(ITERATIONS_BEFORE_TRAINING, REPLAY_BUFFER_SIZE)
     testing = (episode + 1) % 2 == 0 and training
     history = []
+    total_reward = 0
 
     for step in tqdm(range(MAX_EPISODE_LENGTH)):
-        action = sess.run(train_actor_output, feed_dict={k: [v] for k, v in zip(state_placeholders, env_state)})[0]
+        action = sess.run(train_actor_output, feed_dict={k: [[v]] for k, v in zip(state_placeholders, env_state)})[0]
 
-        action = action if testing else np.clip(action, -1, 1) + eta_noise.ou(theta=.15, sigma=.2)
+        action = action if testing else eta_noise.reflected_ou(action * np.array([1, 1, 0, 1]), theta=[.15, .15, .75, .15], sigma=[.2, .2, .10, .2], min=-1, max=1)
 
         assert action.shape == env.action_space.sample().shape, (action.shape, env.action_space.sample().shape)
 
-        env_next_state, env_reward, env_done, env_info = env.step(np.clip(action, -1, 1) * 3*np.pi)
+        max_xvel = 20
+        max_yvel = 8
+        max_yawrate = 0.10
+        max_altitude = 15
+        action = np.clip(action, -1, 1) * np.array([max_xvel, max_yvel, max_yawrate, max_altitude / 4.0]) - np.array([0, 0, 0, max_altitude])
 
-        replay_buffer.append([env_state, action, env_reward, env_next_state, env_done])
-
-        replay_priorities_sum -= replay_priorities[len(replay_buffer) - 1]
-        replay_priorities[len(replay_buffer) - 1] = 300
-        replay_priorities_sum += replay_priorities[len(replay_buffer) - 1]
+        env_next_state, env_reward, env_done, env_info = env.step(action)
+        replay_buffer.add(env_state, env_reward, action, env_done, priority=300)
 
         env_state = env_next_state
 
+        total_reward += env_reward
+
         if training:
-            p_errors = replay_priorities[:len(replay_buffer)] / replay_priorities_sum
-            minibatch_indexes = np.random.choice(range(len(replay_buffer)), size=BATCH_SIZE, replace=False, p=p_errors)
-
-            states_batch = [np.array([replay_buffer[i][0][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
-            next_states_batch = [np.array([replay_buffer[i][3][j] for i in minibatch_indexes]).astype(np.uint8) for j in range(len(state_placeholders))]
-
-            action_batch = np.array([replay_buffer[i][1] for i in minibatch_indexes])
-            reward_batch = np.array([replay_buffer[i][2] for i in minibatch_indexes])
-            done_batch = np.array([replay_buffer[i][4] for i in minibatch_indexes])
+            states_batch, action_batch, reward_batch, next_states_batch, done_batch, indexes = replay_buffer.sample(BATCH_SIZE)
 
             feed = {
                 action_placeholder: action_batch,
@@ -194,14 +217,13 @@ for episode in tqdm(range(10000)):
             }
 
             feed.update({k: v for k, v in zip(state_placeholders, states_batch)})
-            feed.update({k: v for k, v in zip(next_state_placeholder, next_states_batch)})
+            feed.update({k: v for k, v in zip(next_state_placeholders, next_states_batch)})
 
             _, _, errors = sess.run([train_critic, train_actor, q_error], feed_dict=feed)
 
-            for i, error in zip(minibatch_indexes, errors):
-                replay_priorities_sum -= replay_priorities[i]
-                replay_priorities[i] = error
-                replay_priorities_sum += replay_priorities[i]
+            replay_buffer.update(indexes, errors)
 
         if env_done:
             break
+
+    print 'Total Reward', total_reward

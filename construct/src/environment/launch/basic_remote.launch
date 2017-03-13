@@ -12,9 +12,9 @@
   <arg name="verbose"             default="true"/>
   <arg name="ns"                  default="/mylaunch"/>
   <arg name="gzserver_port"       default="11345"/>
-  <arg name="machine_name"        default="potts"/>
+  <arg name="machine_name"        default="aji"/>
   <arg name="machine_address"     default="$(arg machine_name)"/>
-  <arg name="machine_user"        default="dan"/>
+  <arg name="machine_user"        default="josh"/>
 
   <arg name="world_file" default="$(find environment)/worlds/basic.world"/>
 
@@ -25,11 +25,10 @@
   <group ns="$(arg ns)">
 
     <!-- Start Simulator -->
-    <include file="$(find environment)/launch/simulator.launch">
+    <include file="$(find environment)/launch/simulator_remote.launch">
       <arg name="verbose" value="$(arg verbose)"/>
       <arg name="world_name" value="$(arg world_file)"/>
       <arg name="paused" value="true"/>
-      <arg name="headless" value="true"/>
       <arg name="gui" value="$(arg render)"/>
       <arg name="machine" value="$(arg machine_name)"/>
     </include>
@@ -81,10 +80,10 @@
       <!-- ### LOCAL NODES ### -->
 
 
-      <!-- FPV -->
+      <!-- FPV
       <node name="fpv" pkg="image_view" type="image_view">
         <remap from="image" to="camera/rgb"/>
-      </node>
+      </node>-->
 
 
       <!-- JoySticks -->
