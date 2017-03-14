@@ -78,7 +78,6 @@ class World:
                      'machine_address:=' + (self.machine['address'] if 'address' in self.machine else self.machine['name']),
                      'gzserver_port:=' + str(int(self.port))
                      ]
-        print arguments
 
         self.reset = rospy.ServiceProxy(self.namespace + '/gazebo/reset_simulation', Empty, persistent=False)
         self.randomize_obstacles = rospy.ServiceProxy(self.namespace + '/gazebo/randomize_obstacles', Empty, persistent=False)
@@ -172,7 +171,7 @@ class GazeboEnvironment:
         self.resolution = World._get_resolution(self.agent_name)
         # self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
         #                                        spaces.Box(low=0, high=1, shape=(self.resolution[1], self.resolution[0], 1))])
-        self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(7,)),
+        self.observation_space = spaces.Tuple([spaces.Box(low=-100, high=100, shape=(13,)),
                                                spaces.Box(low=0, high=1, shape=(64, 64, 1))])
 
         self.world_manager = GazeboEnvironment.SingleWorldManager(agent_type=self.agent_name, verbose=self.verbose, threads=5)
@@ -249,7 +248,7 @@ class GazeboEnvironment:
 
     def _terminal_status(self):
         status = self.flying_status
-        if self.state['odometry']:
+        if self.state and self.state['odometry']:
             p = self.state['odometry'].pose.pose.position
             position = np.array([p.x, p.y, p.z])
 
@@ -270,13 +269,14 @@ class GazeboEnvironment:
     def _state_to_observation(self, state):
         if state['odometry']:
             pose = state['odometry'].pose.pose
-
-            Odometry
+            twist = state['odometry'].twist.twist
 
             odometry = [pose.position.x, pose.position.y, pose.position.z] + \
-                       [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+                       [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w] + \
+                       [twist.linear.x, twist.linear.y, twist.linear.z] + \
+                       [twist.angular.x, twist.angular.y, twist.angular.z]
             return (np.array(odometry), state['camera'])
-        return (np.zeros([7,]), state['camera'])
+        return (np.zeros([13,]), state['camera'])
 
     def _step(self):
         last = self.frame
@@ -333,7 +333,7 @@ class GazeboEnvironment:
                 while self.frame == 0 and self.state is None:
                     self._step()
 
-                if self._terminal():
+                if self.state is None or self._terminal():
                     self.reset()
 
                 return self._state_to_observation(self.state)

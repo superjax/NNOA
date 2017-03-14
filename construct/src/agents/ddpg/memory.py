@@ -28,15 +28,13 @@ class Memory:
 
         self.replay_memory_size = replay_memory_size
         self.phi_frames = phi_frames
-        self.use_prioritization = True
 
     def update(self, index, priority):
-        if self.use_prioritization:
-            for si, i in enumerate(index):
-                self.priority_sum -= self.priorities[i]
-                self.priorities[i] = priority[si]
-                self.priority_sum += priority[si]
-                self.priority_exp_avg -= (1 - .99999) * (self.priority_exp_avg - priority[si])
+        for si, i in enumerate(index):
+            self.priority_sum -= self.priorities[i]
+            self.priorities[i] = priority[si]
+            self.priority_sum += priority[si]
+            self.priority_exp_avg -= (1 - .99999) * (self.priority_exp_avg - priority[si])
 
     def add(self, state, reward, action, terminal, priority=None):
         # NB! screen is post-state, after action and reward
@@ -74,7 +72,7 @@ class Memory:
         # Faster than np.random.choice
         return list(np.searchsorted(cumsum, proposal, side='left'))
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, prioritized):
         # memory must include poststate, prestate and history
         assert self.can_sample(batch_size)
 
@@ -87,7 +85,7 @@ class Memory:
         odometry_prestates = np.zeros((batch_size, self.phi_frames) + self.odometry_dims, dtype=self.odometry.dtype)
         odometry_poststates = np.zeros((batch_size, self.phi_frames) + self.odometry_dims, dtype=self.odometry.dtype)
 
-        if self.use_prioritization:
+        if prioritized:
             random_indexes = self.sample_priority_indexes(batch_size)
 
         while len(indexes) < batch_size:

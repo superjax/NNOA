@@ -11,8 +11,8 @@ env = GazeboEnvironment(verbose=False)
 
 TAU = 0.01
 GAMMA = .99
-ACTOR_LR = 0.0001
-CRITIC_LR = 0.0001
+ACTOR_LR = 0.001
+CRITIC_LR = 0.001
 ACTOR_L2_WEIGHT_DECAY = 0.00
 CRITIC_L2_WEIGHT_DECAY = 0.01
 BATCH_SIZE = 32
@@ -150,15 +150,14 @@ with tf.name_scope('actor_loss'):
 
 with tf.name_scope('critic_loss'):
     q_target_value = tf.select(done_placeholder, reward_placeholder, reward_placeholder + GAMMA * tf.stop_gradient(target_critic_next_output))
-    q_error = (q_target_value - train_critic_placeholder_action) ** 2
+    q_error = tf.abs(q_target_value - train_critic_placeholder_action)
     q_error_batch = tf.reduce_mean(q_error)
     weight_decay_critic = tf.add_n([CRITIC_L2_WEIGHT_DECAY * tf.reduce_sum(var ** 2) for var in train_critic_vars])
     loss_critic = q_error_batch + weight_decay_critic
 
     # Critic Optimization
     optim_critic = tf.train.AdamOptimizer(CRITIC_LR)
-    grads_and_vars_critic = optim_critic.compute_gradients(loss_critic, var_list=train_critic_vars,
-                                                           colocate_gradients_with_ops=True)
+    grads_and_vars_critic = optim_critic.compute_gradients(loss_critic, var_list=train_critic_vars, colocate_gradients_with_ops=True)
     optimize_critic = optim_critic.apply_gradients(grads_and_vars_critic)
     with tf.control_dependencies([optimize_critic]):
         train_target_vars = zip(train_critic_vars, target_critic_vars)
@@ -188,15 +187,17 @@ for episode in tqdm(range(10000)):
     total_reward = 0
 
     for step in tqdm(range(MAX_EPISODE_LENGTH)):
-        action = sess.run(train_actor_output, feed_dict={k: [[v]] for k, v in zip(state_placeholders, env_state)})[0]
+        action, q = sess.run([train_actor_output, train_critic_current_action], feed_dict={k: [[v]] for k, v in zip(state_placeholders, env_state)})
 
-        action = action if testing else eta_noise.reflected_ou(action * np.array([1, 1, 0, 1]), theta=[.15, .15, .75, .15], sigma=[.2, .2, .10, .2], min=-1, max=1)
+        action = action[0]
+
+        action = action if testing else eta_noise.reflected_ou(action * np.array([1, 1, 0, 1]), theta=[.15, .15, .75, .15], sigma=[.10, .10, .10, .10], min=-1, max=1)
 
         assert action.shape == env.action_space.sample().shape, (action.shape, env.action_space.sample().shape)
 
         max_xvel = 20
         max_yvel = 8
-        max_yawrate = 0.10
+        max_yawrate = 0.2
         max_altitude = 15
         action = np.clip(action, -1, 1) * np.array([max_xvel, max_yvel, max_yawrate, max_altitude / 4.0]) - np.array([0, 0, 0, max_altitude])
 
@@ -208,7 +209,7 @@ for episode in tqdm(range(10000)):
         total_reward += env_reward
 
         if training:
-            states_batch, action_batch, reward_batch, next_states_batch, done_batch, indexes = replay_buffer.sample(BATCH_SIZE)
+            states_batch, action_batch, reward_batch, next_states_batch, done_batch, indexes = replay_buffer.sample(BATCH_SIZE, prioritized=True)
 
             feed = {
                 action_placeholder: action_batch,
@@ -219,9 +220,11 @@ for episode in tqdm(range(10000)):
             feed.update({k: v for k, v in zip(state_placeholders, states_batch)})
             feed.update({k: v for k, v in zip(next_state_placeholders, next_states_batch)})
 
-            _, _, errors = sess.run([train_critic, train_actor, q_error], feed_dict=feed)
+            _, _, errors, critic_error = sess.run([train_critic, train_actor, q_error, q_error_batch], feed_dict=feed)
 
             replay_buffer.update(indexes, errors)
+
+            print 'q:{:5f} reward:{:5f} trainerror:{:5f}'.format(q[0], env_reward, critic_error)
 
         if env_done:
             break
