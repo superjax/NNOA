@@ -66,8 +66,8 @@ Author: James Jackson
 
   <!-- Step Camera -->
   <!-- The width and/or height MUST remain larger than 255 in order to ues faster-than-real-time: https://bitbucket.org/osrf/gazebo/issues/2214/width-height-255-for-camera-causes -->
-  <xacro:include filename="$(find fcu_sim_plugins)/xacro/step_camera.xacro"/>
-  <xacro:step_camera
+  <!-- <xacro:include filename="$(find fcu_sim_plugins)/xacro/step_camera.xacro"/> -->
+<!--   <xacro:step_camera
     namespace="${namespace}"
     frame_rate="25"
     rgb_range="1000"
@@ -77,18 +77,19 @@ Author: James Jackson
     height="256"
     image_camera_info_topic="camera_info">
     <origin xyz="0.127 0 -0.0889"/>
-  </xacro:step_camera> 
+  </xacro:step_camera>  -->
 
   <!-- Laser Scanner -->
-<!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/velodyne.xacro"/>
-  <xacro:velodyne_custom
+  <xacro:include filename="gimbal_laser.xacro"/>
+  <!-- <xacro:include filename="$(find fcu_sim_plugins)/xacro/laser_scanner.xacro"/> -->
+  <xacro:gimbal_laser
     namespace="${namespace}"
     parent_link="${namespace}/base_link"
-    update_rate="25"
-    visualize="false">
-    <origin xyz="${body_width+0.1} 0 0" rpy="0 0 0"/>
-  </xacro:velodyne_custom>
- -->
+    visualize="false"
+    pose_topic="laser_pose">
+    <origin xyz="0 0 ${body_height+1.0}" rpy="0 0 0"/>
+  </xacro:gimbal_laser>
+
 
   <!-- GPS -->
 <!--   <xacro:include filename="$(find fcu_sim_plugins)/xacro/GPS.xacro"/>

@@ -61,6 +61,7 @@
       <rosparam command="load" file="$(find environment)/models/agent_models/neo_controller.yaml" ns="controller"/>
       <node name="controller" pkg="ros_copter" type="controller" output="screen">
         <remap from="estimate" to="ground_truth/odometry"/>
+        <remap from="high_level_command" to="velocity_command"/>
       </node>
 
       <!-- Is Flying Publisher -->
@@ -75,7 +76,9 @@
 
       <!-- Reactive Planner -->
       <node pkg="obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance">
-        <param name="plotting" value="true"/>
+        <param name="plotting" value="false"/>
+        <remap from="relative_state" to="ground_truth/odometry"/>
+        <param name="max_velocity_command" value="25.0"/>
       </node>
 
       <!-- FPV -->
@@ -83,7 +86,8 @@
         <remap from="image" to="camera/rgb"/>
       </node>
 
-
+      <!-- OA Debug -->
+      <!-- <node name="rviz" pkg="rviz" type="rviz" args="$(find environment)/rviz/oa.rviz"/> -->
 
     </group>
   </group>
