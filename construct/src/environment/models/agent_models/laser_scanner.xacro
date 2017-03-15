@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Gimballed RPLIDAR-A2 -->
+  <xacro:macro
+    name="RPLIDAR-A2"
+    params="namespace
+            parent_link
+            visualize
+            *origin">
+    <xacro:laser_scanner
+      namespace="${namespace}"
+      parent_link="${parent_link}"
+      num_samples="400"
+      visualize="${visualize}"
+      min_range="0.15"
+      max_range="6"
+      res_range="0.01"
+      min_angle="-3.14159"
+      max_angle="3.14159"
+      update_rate="10"
+      z_rotation_range="100000"
+      y_rotation_range="100000"
+      x_rotation_range="100000"
+      command_topic="bleh">
+      <xacro:insert_block name="origin"/>
+    </xacro:laser_scanner>
+  </xacro:macro>
+
+  <!-- Macro to add a laser scanner. -->
+  <xacro:macro
+    name="laser_scanner"
+    params="namespace
+            parent_link
+            num_samples
+            visualize
+            min_range
+            max_range
+            res_range
+            min_angle
+            max_angle
+            update_rate
+            x_rotation_range
+            y_rotation_range
+            z_rotation_range
+            command_topic
+            *origin">
+ <!-- Base Link  -->
+    <link name="${namespace}/laser/base_link">
+      <inertial>
+        <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        <mass value="0.00001" />
+        <xacro:insert_block name="origin" />
+      </inertial>
+    </link>
+
+
+    <!-- Base Joint -->
+    <joint name="${namespace}/laser_base_joint" type="revolute">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent_link}" />
+      <child link="${namespace}/laser/base_link" />
+      <limit upper="0" lower="0" effort="0" velocity="0"/>
+    </joint>
+
+    <!-- Yaw Link -->
+    <link name="${namespace}/laser/yaw_link">
+      <inertial>
+        <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        <mass value="0.00001" />
+        <origin xyz="0 0 0" rpy = "0 0 0"/>
+      </inertial>
+    </link>
+
+    <!-- Yaw joint -->
+    <joint name="${namespace}/laser_yaw_joint" type="revolute">
+      <pose xyz="0 0 0" rpy = "0 0 0"/>
+      <parent link="${namespace}/laser/base_link" />
+      <child link="${namespace}/laser/yaw_link" />
+      <limit upper="${z_rotation_range}" lower="${-1.0*z_rotation_range}" effort="1000" velocity="5000"/>
+    </joint>
+
+    <!-- Roll Link -->
+    <link name="${namespace}/laser/roll_link">
+      <inertial>
+        <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        <mass value="0.00001" />
+        <origin xyz="0 0 0" rpy = "0 0 0"/>
+      </inertial>
+    </link>
+
+    <!-- Roll joint -->
+    <joint name="${namespace}/laser_roll_joint" type="revolute">
+      <origin xyz="0 0 0" rpy = "0 0 0"/>
+      <parent link="${namespace}/laser/yaw_link" />
+      <child link="${namespace}/laser/roll_link" />
+      <limit upper="${x_rotation_range}" lower="${-1.0*x_rotation_range}" effort="1000" velocity="5000"/>
+    </joint>
+
+    <!-- Pitch Link -->
+    <link name="${namespace}/laser/pitch_link">
+      <inertial>
+        <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        <mass value="0.00001" />
+        <origin xyz="0 0 0" rpy = "0 0 0"/>
+      </inertial>
+    </link>
+
+    <!-- Pitch joint -->
+    <joint name="${namespace}/laser_pitch_joint" type="revolute">
+      <origin xyz="0 0 0" rpy = "0 0 0"/>
+      <parent link="${namespace}/laser/roll_link" />
+      <child link="${namespace}/laser/pitch_link" />
+      <limit upper="${x_rotation_range}" lower="${-1.0*x_rotation_range}" effort="1000" velocity="5000"/>
+    </joint>
+
+
+      <!-- Load Gimbal Controller Plugin -->
+    <gazebo>
+      <plugin filename="libgimbal_plugin.so" name="fcu_sim_gimbal_plugin">
+        <namespace>${namespace}</namespace>
+        <yawJoint>${namespace}/laser_yaw_joint</yawJoint>
+        <pitchJoint>${namespace}/laser_pitch_joint</pitchJoint>
+        <rollJoint>${namespace}/laser_roll_joint</rollJoint>
+        <timeConstant>0.000001</timeConstant>
+        <commandTopic>${command_topic}</commandTopic>
+        <poseTopic>laser_pose</poseTopic>
+        <useSlipring>true</useSlipring>
+        <linkName>${parent_link}</linkName>
+        <autoStabilize>true</autoStabilize>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+
+</robot>
