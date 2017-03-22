@@ -13,7 +13,7 @@
   <arg name="ns"                  default="/mylaunch"/>
   <arg name="gzserver_port"       default="11345"/>
 
-  <arg name="world_file" default="$(find environment)/worlds/basic.world"/>
+  <arg name="world_file" default="$(find environment)/worlds/test.world"/>
 
   <env name="GAZEBO_MASTER_URI" value="http://localhost:$(arg gzserver_port)" />
 
@@ -23,7 +23,7 @@
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="verbose" value="$(arg verbose)"/>
       <arg name="world_name" value="$(arg world_file)"/>
-      <arg name="paused" value="true"/>
+      <arg name="paused" value="false"/>
       <arg name="gui" value="$(arg render)"/>
     </include>
 
@@ -45,8 +45,8 @@
 
       <rosparam command="load" file="$(find environment)/models/agent_models/$(arg mav_name).yaml"/>
 
-      <!-- JoySticks -->
-<!--       <node pkg="joy" type="joy_node" name="joy">
+      <!-- JoSticks
+       <node pkg="joy" type="joy_node" name="joy">
         <param name="autorepeat_rate" value="50"/>
         <param name="coalesce_interval" value="0.02"/>
       </node>
@@ -54,7 +54,7 @@
         <rosparam command="load" file="$(find fcu_common)/param/xbox.yaml"/>
         <param name="gazebo_namespace" value="$(arg ns)"/>
         <param name="control_mode" value="5"/>
-        <remap from="command" to="high_level_command"/>
+        <remap from="command" to="velocity_command"/>
       </node> -->
 
       <!-- Position Controller -->
@@ -67,8 +67,8 @@
       <!-- Is Flying Publisher -->
       <node pkg="rostopic" type="rostopic" name="is_flying_pub" args="pub is_flying std_msgs/Bool true"/>
 
-      <!-- Waypoint Manager -->
-<!--       <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
+      <!-- Waypoint Manager
+      <node name="waypoint_manager" pkg="ros_copter" type="waypoint_manager.py" output="screen">
         <rosparam command="load" file="$(find ros_copter)/params/waypoints.yaml"/>
         <remap from="waypoint" to="high_level_command"/>
         <remap from="state" to="ground_truth/odometry"/>
@@ -76,7 +76,7 @@
 
       <!-- Reactive Planner -->
       <node pkg="obstacle_avoidance" type="obstacle_avoidance" name="obstacle_avoidance">
-        <param name="plotting" value="false"/>
+        <param name="plotting" value="true"/>
         <remap from="relative_state" to="ground_truth/odometry"/>
         <param name="max_velocity_command" value="25.0"/>
       </node>
@@ -87,7 +87,7 @@
       </node>
 
       <!-- OA Debug -->
-      <!-- <node name="rviz" pkg="rviz" type="rviz" args="$(find environment)/rviz/oa.rviz"/> -->
+      <node name="rviz" pkg="rviz" type="rviz" args="$(find environment)/rviz/oa.rviz"/>
 
     </group>
   </group>

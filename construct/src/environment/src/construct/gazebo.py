@@ -50,11 +50,13 @@ class World:
 
         self.world_file, self.start, self.goal, self.map = generate_world(num_objects=50)
 
+        print self.world_file
+
         # There is an annoying flip that happens for the goal altitude
         self.goal[1] *= -1
         self.goal[2] *= -1
 
-        self.namespace = '/' + str(supernamespace) + str(uuid.uuid4().get_hex().upper())
+        self.namespace = '/james' # + str(supernamespace) + str(uuid.uuid4().get_hex().upper())
 
         max_step_size = self._get_step_size(self.world_file)
         update_rate = self._get_update_rate(agent)
@@ -63,13 +65,13 @@ class World:
         assert math.floor((1.0 / update_rate) / max_step_size) == (1.0 / update_rate) / max_step_size
 
     def run(self, pause_process=True):
-        arguments = [os.path.abspath(self.path + "/../../launch/basic_local.launch"),
+        arguments = [os.path.abspath(self.path + "/../../launch/basic.launch"),
                      'x:=' + str(self.start[0]),
                      'y:=' + str(self.start[1]),
                      'z:=' + str(self.start[2]),
                      'world_file:=' + str(self.world_file),
                      'yaw:=' + str(np.pi / 2.0),
-                     'render:=' + str(False),
+                     'render:=' + str(True),
                      'mav_name:=' + self.agent,
                      'verbose:=' + str(self.verbose),
                      'ns:=' + self.namespace,
@@ -186,7 +188,6 @@ class GazeboEnvironment:
 
         self.unpause_sim_op = rospy.ServiceProxy(ns + '/gazebo/unpause_physics', Empty)
         self.step_op = rospy.Publisher(ns + '/gazebo/step', Int16, queue_size=5)
-        self.waypoint_op = rospy.Publisher(ns + '/' + self.agent_name + '/waypoint', Command, queue_size=5, latch=True)
         self.command_op = rospy.Publisher(ns + '/' + self.agent_name + '/high_level_command', Command, queue_size=5, latch=True)
 
         self.reset()
@@ -224,12 +225,6 @@ class GazeboEnvironment:
         cmd.mode = Command.MODE_XVEL_YVEL_YAWRATE_ALTITUDE
         cmd.x, cmd.y, cmd.z, cmd.F = data
         self.command_op.publish(cmd)
-
-    def _set_waypoint(self, position):
-        cmd = Command()
-        cmd.x, cmd.y, cmd.z, cmd.F = position[0], position[1], 0, position[2]
-        cmd.mode = Command.MODE_XPOS_YPOS_YAW_ALTITUDE 
-        self.waypoint_op.publish(cmd)
 
     @staticmethod
     def _is_deadly_collision(collision):
