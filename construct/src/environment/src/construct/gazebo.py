@@ -56,7 +56,7 @@ class World:
         self.goal[1] *= -1
         self.goal[2] *= -1
 
-        self.namespace = '/james' # + str(supernamespace) + str(uuid.uuid4().get_hex().upper())
+        self.namespace = '/mylaunch' # + str(supernamespace) + str(uuid.uuid4().get_hex().upper())
 
         max_step_size = self._get_step_size(self.world_file)
         update_rate = self._get_update_rate(agent)
@@ -183,7 +183,7 @@ class GazeboEnvironment:
             rospy.Subscriber(ns + '/' + self.agent_name + '/camera/rgb', Image, self._on_cameraframe, queue_size=1),
             rospy.Subscriber(ns + '/' + self.agent_name + '/ground_truth/odometry', Odometry, self._on_odometry, queue_size=1),
             rospy.Subscriber(ns + '/' + self.agent_name + '/contact', ContactsState, self._on_contact, queue_size=1),
-            rospy.Subscriber(ns + '/' + self.agent_name + '/high_level_command', Command, self._on_command, queue_size=1)
+            rospy.Subscriber(ns + '/' + self.agent_name + '/velocity_command', Command, self._on_command, queue_size=1)
         ]
 
         self.unpause_sim_op = rospy.ServiceProxy(ns + '/gazebo/unpause_physics', Empty)

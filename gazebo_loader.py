@@ -5,12 +5,15 @@ import cv2
 import imageio
 import uuid
 import os
-from src.gazebo import GazeboEnvironment
+from construct import GazeboEnvironment
 import numpy as np
+import math
+import tf.transformations as tft
+
 #with imageio.get_writer('video.gif', mode='I', fps=50, palettesize=16) as writer:
 # writer.append_data(g.state['camera'])
-cv2.startWindowThread()
-cv2.namedWindow("preview", cv2.CV_WINDOW_AUTOSIZE)
+# cv2.startWindowThread()
+# cv2.namedWindow("preview", cv2.CV_WINDOW_AUTOSIZE)
 
 # cv2.destroyAllWindows()
 
@@ -39,19 +42,27 @@ data_bar = tqdm(total=target_episodes)
 
 with open(base_path + "/index.csv", mode='a') as idx_file:
     while ep < target_episodes:
+        state = g.reset()
         episode = []
         episode_bar = tqdm()
         try:
             while not g._terminal():
                 episode_bar.update()
-                g._step()
 
-                cv2.imshow("preview", g.state['camera'])
+                gx, gy, gz = g.world_manager.world.goal
+                cx, cy, cz = state[0][:3]
+                qx, qy, qz, qw = state[0][3:7]
+                r, p, cyaw = tft.euler_from_quaternion(state[0][3:7])
+                gyaw = math.atan2(gy - cy, gx - cx)
 
+                action = np.clip([.5 * (gy - cy) * math.sin(cyaw), .5 * (gx - cx) * math.cos(cyaw), gyaw - cyaw, -10.0], -10, 10)
+
+                state, reward, terminal, _ = g.step(action)
                 lc = wait(g)
+
                 episode.append((g.state, lc))
 
-            if g._terminal_status() == Gazebo.Status.success:
+            if g._terminal_status() == GazeboEnvironment.Status.success:
                 data_bar.update()
                 ep += 1
                 episode_path = base_path + "/{}".format(ep)
@@ -81,6 +92,6 @@ with open(base_path + "/index.csv", mode='a') as idx_file:
             pass
 
         episode_bar.close()
-        g.reset()
+
 
 cv2.destroyAllWindows()

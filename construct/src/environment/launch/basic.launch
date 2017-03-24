@@ -23,7 +23,7 @@
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
       <arg name="verbose" value="$(arg verbose)"/>
       <arg name="world_name" value="$(arg world_file)"/>
-      <arg name="paused" value="false"/>
+      <arg name="paused" value="true"/>
       <arg name="gui" value="$(arg render)"/>
     </include>
 
@@ -54,8 +54,8 @@
         <rosparam command="load" file="$(find fcu_common)/param/xbox.yaml"/>
         <param name="gazebo_namespace" value="$(arg ns)"/>
         <param name="control_mode" value="5"/>
-        <remap from="command" to="velocity_command"/>
-      </node> -->
+        <remap from="command" to="high_level_command"/>
+      </node>-->
 
       <!-- Position Controller -->
       <rosparam command="load" file="$(find environment)/models/agent_models/neo_controller.yaml" ns="controller"/>
@@ -79,6 +79,12 @@
         <param name="plotting" value="true"/>
         <remap from="relative_state" to="ground_truth/odometry"/>
         <param name="max_velocity_command" value="25.0"/>
+        <param name="lookahead_time" value="1.25"/>
+        <param name="bun_radius" value="0.4"/>
+        <param name="dot_product_gain" value="1.5"/>
+        <param name="scale_gain" value="1.0"/>
+        <param name="stiffness_gain" value="0.7"/>
+        <param name="spring_constant" value="2.5"/>
       </node>
 
       <!-- FPV -->
